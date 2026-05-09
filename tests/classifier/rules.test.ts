@@ -30,7 +30,7 @@ function makeConfig(pinnedLast: string[], immune: string[]): Config {
     quiet: false,
     concurrency: 1,
     estimate: false,
-    temporalWindowMinutes: 15,
+    temporalWindowMinutes: 5,
     consensusThreshold: 0.6,
     dedupeThreshold: 0,
     logFormat: 'pretty',

@@ -32,7 +32,7 @@ ${chalk.bold('OPTIONS')}
   --max-retries           <n>       Max retries on API errors          (default: 3)
   --concurrency           <n>       Concurrent API batch calls         (default: 3)
   --estimate                        Print cost estimate and exit (no API calls made)
-  --temporal-window       <minutes> Temporal cluster window in minutes (default: 15)
+  --temporal-window       <minutes> Temporal cluster window in minutes (default: 5)
   --consensus-threshold   <0-1>     Majority ratio for temporal override (default: 0.6)
   --dry-run                         Analyze without writing files
   --skip-analysis                   Use cached analysis_results.json

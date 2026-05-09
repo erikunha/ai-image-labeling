@@ -31,7 +31,7 @@ function makeConfig(immune: string[], overridable: string[]): Config {
     quiet: false,
     concurrency: 1,
     estimate: false,
-    temporalWindowMinutes: 15,
+    temporalWindowMinutes: 5,
     consensusThreshold: 0.6,
     dedupeThreshold: 0,
     logFormat: 'pretty',
@@ -112,11 +112,11 @@ describe('applyTemporalConsensus', () => {
     expect(result[4]?.analysis.category).toBe('unknown');
   });
 
-  it('images outside 15-min window are in different clusters', () => {
+  it('images outside 5-min window are in different clusters', () => {
     const imgs = [
       makeImg('img1.jpg', 'kitchen', BASE),
       makeImg('img2.jpg', 'kitchen', BASE + 1 * MIN),
-      // gap > 15 min — new cluster
+      // gap > 5 min — new cluster
       makeImg('img3.jpg', 'bathroom', BASE + 20 * MIN),
       makeImg('img4.jpg', 'bathroom', BASE + 21 * MIN),
       makeImg('img5.jpg', 'unknown', BASE + 22 * MIN),

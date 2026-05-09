@@ -127,7 +127,7 @@ export interface Config {
   readonly concurrency: number;
   /** When true, print cost estimate and exit without making API calls. */
   readonly estimate: boolean;
-  /** Temporal cluster window in minutes. Images within this window are grouped. Default: 15. */
+  /** Temporal cluster window in minutes. Images within this window are grouped. Default: 5. */
   readonly temporalWindowMinutes: number;
   /** Minimum majority ratio (0–1) needed for temporal consensus override. Default: 0.6. */
   readonly consensusThreshold: number;
@@ -502,7 +502,7 @@ export async function loadConfig(cliOptions: RawCliOptions): Promise<Config> {
 }
 
 function resolveTemporalWindow(raw: number | undefined): number {
-  const minutes = raw ?? parseInt(process.env['TEMPORAL_WINDOW_MINUTES'] ?? '15', 10);
+  const minutes = raw ?? parseInt(process.env['TEMPORAL_WINDOW_MINUTES'] ?? '5', 10);
   if (!Number.isFinite(minutes) || minutes <= 0) {
     throw new Error(
       `[error] --temporal-window must be a positive number of minutes (got: ${String(raw)})`,

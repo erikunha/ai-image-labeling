@@ -54,7 +54,7 @@ program
   .option('--max-retries <n>', 'Max retries on API errors', '3')
   .option('--concurrency <n>', 'Concurrent API batch calls in-flight', '3')
   .option('--estimate', 'Print cost estimate for all providers and exit', false)
-  .option('--temporal-window <minutes>', 'Temporal cluster window in minutes', '15')
+  .option('--temporal-window <minutes>', 'Temporal cluster window in minutes', '5')
   .option('--consensus-threshold <n>', 'Majority ratio for temporal override (0.5–1.0)', '0.6')
   .option('--dedupe-threshold <n>', 'Hamming distance for burst dedup (0–64, 0=off)', '8')
   .option('--dry-run', 'Analyze without writing output files', false)

@@ -47,7 +47,7 @@ function makeConfig(): Config {
     // Use concurrency:1 (sequential) by default for deterministic test ordering
     concurrency: 1,
     estimate: false,
-    temporalWindowMinutes: 15,
+    temporalWindowMinutes: 5,
     consensusThreshold: 0.6,
     dedupeThreshold: 0,
     logFormat: 'pretty',

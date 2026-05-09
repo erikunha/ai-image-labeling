@@ -56,7 +56,7 @@ function makeConfig(overrides: Partial<Config> = {}): Config {
     dryRun: false, skipAnalysis: false, forceSkipAnalysis: false,
     asyncBatch: false, resumeBatch: false,
     outputFormat: 'json', logFormat: 'pretty', verbose: false, quiet: false,
-    concurrency: 1, estimate: false, temporalWindowMinutes: 15,
+    concurrency: 1, estimate: false, temporalWindowMinutes: 5,
     consensusThreshold: 0.6, dedupeThreshold: 0, timing: false,
     filenameTemplate: '{n}. {description} dated {date}.{ext}',
     watch: false, watchPoll: false, interactive: false, plugins: [],

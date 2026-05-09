@@ -30,7 +30,7 @@ Add the category name to the appropriate array(s) in `categories.json`.
 ### 3. Verify category config parses cleanly
 
 ```bash
-npm run typecheck && npm test
+pnpm run typecheck && pnpm test
 ```
 
 The `CategoryConfigSchema` will reject:
@@ -46,7 +46,7 @@ If two descriptions could apply to the same image, rewrite one to be more specif
 ### 5. Test with a dry run
 
 ```bash
-node dist/cli/index.js batch \
+node dist/cli/index.js \
   --input ./sample-photos \
   --output ./out \
   --categories ./examples/categories.json \

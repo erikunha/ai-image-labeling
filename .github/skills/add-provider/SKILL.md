@@ -25,7 +25,7 @@ Ask the user:
 ### 2. Install the SDK
 
 ```bash
-npm install <sdk-package>
+pnpm add <sdk-package>
 ```
 
 Add it to `package.json` under `dependencies` (not `devDependencies`).
@@ -64,9 +64,9 @@ if (config.provider === '<newprovider>' && !config.newProviderApiKey) {
 }
 ```
 
-### 4. Implement the factory in `src/analyzer/client.ts`
+### 4. Create `src/analyzer/providers/newprovider.ts`
 
-Add a factory function following the existing pattern:
+Create a new provider file following the existing pattern. This is the ONLY file that may import the new provider's SDK:
 
 ```typescript
 import { NewProviderClient } from '<sdk-package>';
@@ -104,7 +104,7 @@ function createNewProviderClient(config: Config): LLMClient {
 }
 ```
 
-Add the new case to `createLLMClient()`:
+Then wire it into `src/analyzer/client.ts` by importing `createNewProviderClient` from `'./providers/newprovider.js'` and adding the new case to `createLLMClient()`:
 
 ```typescript
 case '<newprovider>':
@@ -144,7 +144,7 @@ if (message.includes('<provider-specific error text>')) return true;
 ### 9. Test
 
 - Add a unit test in `tests/analyzer/batch.test.ts` asserting the new provider's client is called
-- Run `npm run typecheck && npm test && npm run lint`
+- Run `pnpm run typecheck && pnpm test && pnpm run lint`
 
 ## Example output (diff summary)
 

@@ -29,7 +29,7 @@ Required fields that are commonly missed:
 ```typescript
 concurrency: 1,          // always 1 in tests — prevents non-deterministic concurrent ordering
 estimate: false,
-temporalWindowMinutes: 15,
+temporalWindowMinutes: 5,
 consensusThreshold: 0.6,
 dedupeThreshold: 0,      // 0 = disabled; prevents Sharp I/O in unit tests
 forceSkipAnalysis: false,
@@ -47,6 +47,7 @@ linkWindowDays: 7,
 `AnalysisResult` fixtures must also include the v4 fields:
 
 ```typescript
+fullDescription: '',     // max 250 chars; use '' as sentinel default in test factories
 confidence: 0,           // 0–1; 0 = unknown/unparsed
 extractedText: null,     // null when no visible text
 ```
@@ -81,7 +82,7 @@ function makeConfig(): Config {
     quiet: false,
     concurrency: 1,
     estimate: false,
-    temporalWindowMinutes: 15,
+    temporalWindowMinutes: 5,
     consensusThreshold: 0.6,
     dedupeThreshold: 0, // 0 = disabled in tests
     forceSkipAnalysis: false,

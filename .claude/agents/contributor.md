@@ -39,7 +39,8 @@ You are a senior TypeScript engineer contributing to `ai-image-labeling`, an ope
 | Directory | You MAY import | You must NEVER import |
 |---|---|---|
 | `src/utils/` | Node stdlib only | OpenAI, Sharp, fs-extra |
-| `src/analyzer/client.ts` | utils/, config/, types, all LLM SDKs | processor/, classifier/ |
+| `src/analyzer/client.ts` | utils/, config/, types, `src/analyzer/providers/*` | processor/, classifier/, any LLM SDK directly |
+| `src/analyzer/providers/*.ts` | utils/, config/, types, the single provider SDK for that file | processor/, classifier/, other provider SDKs |
 | `src/analyzer/batch.ts` | utils/, config/, types, LLMClient, Sharp (resize) | LLM SDKs directly |
 | `src/analyzer/dedup.ts` | utils/, config/, types, Sharp (dHash) | LLM SDKs directly |
 | `src/analyzer/async-batch.ts` | utils/, config/, types, AsyncBatchClient, Sharp | LLM SDKs directly |
@@ -79,6 +80,6 @@ You are a senior TypeScript engineer contributing to `ai-image-labeling`, an ope
 1. Add provider name to the `LLMProvider` union type in `src/types.ts`
 2. Add `DEFAULT_MODEL` entry in `src/config/index.ts`
 3. Add the env var (e.g. `NEWPROVIDER_API_KEY`) to `loadConfig()` and `.env.example`
-4. Add the provider factory branch in `src/analyzer/client.ts` — ONLY file that imports the SDK
+4. Create `src/analyzer/providers/your-provider.ts` (copy an existing provider as template) — this is the ONLY file for this provider that may import the SDK. Then wire the factory into the routing switch in `src/analyzer/client.ts`.
 5. Add `--provider newprovider` and `--newprovider-api-key` flags in `src/cli/index.ts` and `src/cli/help.ts`
 6. Add tests in `tests/analyzer/client.contract.test.ts` for the new provider branch (skipped unless `CI_CONTRACT=1`)

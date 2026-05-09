@@ -24,7 +24,9 @@ You do NOT fix issues — document them precisely so the Contributor can act.
 
 5. **Plugin dynamic import.** Plugins are `.mjs` files loaded via `import()`. An attacker controlling the `--plugin` path could execute arbitrary code.
 
-6. **API key exposure.** Keys from env vars must never appear in log output, cache files, or plugin hook arguments.
+6. **REST server mode (`--serve`).** When running `ai-image-labeling serve`, the HTTP server accepts image uploads and classification requests. Attack surfaces: unauthenticated access (if `--serve-api-key` not set), rate-limit bypass (if `--serve-rate-limit` not set), and images uploaded to the server could contain adversarial content to manipulate LLM classifications.
+
+7. **API key exposure.** Keys from env vars must never appear in log output, cache files, or plugin hook arguments.
 
 ## Audit checklist
 
@@ -42,6 +44,13 @@ You do NOT fix issues — document them precisely so the Contributor can act.
 - [ ] `BatchEnvelopeSchema` in `src/analyzer/batch.ts` validates the full LLM response before any field is accessed — a bare `JSON.parse(...) as {...}` cast is HIGH
 - [ ] `--skip-analysis` / `--force-skip-analysis` path re-reads `analysis_results.json` — verify the parsed cache is validated before use (schema version check + `categoriesHash` check)
 - [ ] `--categories` path is resolved to an absolute path; the JSON is parsed with `CategoryConfigSchema.safeParse()`, not bare `JSON.parse`
+
+### REST server security (check when serve subcommand changed)
+
+- [ ] `--serve-api-key` is enforced on all non-health routes when set — check `src/server/index.ts`
+- [ ] Rate limiter in `src/server/rate-limiter.ts` correctly tracks per-IP sliding window
+- [ ] Server binds to `127.0.0.1` (localhost only) by default — verify no wildcard bind without explicit config
+- [ ] Uploaded image content never reaches the filesystem outside the configured output directory
 
 ### MEDIUM
 

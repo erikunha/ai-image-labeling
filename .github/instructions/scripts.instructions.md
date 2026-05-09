@@ -11,12 +11,12 @@ They are NOT part of the production bundle. Never import them from `src/`.
 
 ## Existing scripts
 
-| Script                           | Purpose                                                            | npm alias                    |
-| -------------------------------- | ------------------------------------------------------------------ | ---------------------------- |
-| `generate-fixtures.ts`           | Creates synthetic JPEG test fixtures in `tests/fixtures/images/`   | `npm run fixtures`           |
-| `generate-benchmark-fixtures.ts` | Creates 24 labelled benchmark JPEGs in `tests/fixtures/benchmark/` | `npm run benchmark:generate` |
-| `benchmark.ts`                   | Runs accuracy/cost/latency benchmark across LLM providers          | `npm run benchmark`          |
-| `gen-readme-flags.ts`            | Auto-generates the CLI flags table in `README.md`                  | `npm run readme:generate`    |
+| Script                           | Purpose                                                            | pnpm alias                    |
+| -------------------------------- | ------------------------------------------------------------------ | ----------------------------- |
+| `generate-fixtures.ts`           | Creates synthetic JPEG test fixtures in `tests/fixtures/images/`   | `pnpm run fixtures`           |
+| `generate-benchmark-fixtures.ts` | Creates 24 labelled benchmark JPEGs in `tests/fixtures/benchmark/` | `pnpm run benchmark:generate` |
+| `benchmark.ts`                   | Runs accuracy/cost/latency benchmark across LLM providers          | `pnpm run benchmark`          |
+| `gen-readme-flags.ts`            | Auto-generates the CLI flags table in `README.md`                  | `pnpm run readme:generate`    |
 
 ## Rules for new scripts
 

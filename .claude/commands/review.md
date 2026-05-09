@@ -8,13 +8,14 @@ Work through every item below. Output a structured report at the end.
 
 ### 1. Module boundaries (BLOCK)
 - `src/utils/` must NOT import OpenAI, Anthropic, Google LLM SDKs, Sharp, or `fs-extra`
-- `src/analyzer/client.ts` is the ONLY file allowed to import any LLM SDK
-- `src/analyzer/*.ts` (except `client.ts`) must NOT import LLM SDKs directly
+- `src/analyzer/providers/*.ts` are the ONLY files allowed to import LLM SDKs (one SDK per file)
+- `src/analyzer/client.ts` is a thin routing layer — it imports from `./providers/` only, NOT from any LLM SDK directly
+- `src/analyzer/*.ts` (except files in `providers/`) must NOT import LLM SDKs directly
 - `src/analyzer/` may import Sharp only in `batch.ts` and `dedup.ts`
 - `src/classifier/` must NOT import LLM SDKs, Sharp, or `fs-extra`
 - `src/processor/` must NOT import any LLM SDK
 
-Grep: `grep -rn "from 'openai'\|from '@anthropic-ai\|from '@google/generative" src/` (exclude `client.ts`)
+Grep: `grep -rn "from 'openai'\|from '@anthropic-ai\|from '@google/generative" src/` — should only appear in `src/analyzer/providers/*.ts`
 
 ### 2. ESM import correctness (BLOCK)
 - All relative imports must end in `.js`
@@ -25,17 +26,17 @@ Grep: `grep -rn "from '\./[^']*'" src/ tests/` — flag any missing `.js` suffix
 - No `sk-`, `sk-ant-`, `AIza`, `ghp_` literals in source or tests
 
 ### 4. TypeScript (BLOCK)
-Run: `npm run typecheck` — must pass zero errors
+Run: `pnpm run typecheck` — must pass zero errors
 
 ### 5. Tests (BLOCK if coverage drops)
-Run: `npm test`
+Run: `pnpm test`
 - All tests must pass
 - Lines ≥ 75%, Functions ≥ 85%, Branches ≥ 75%
-- Config fixtures must include `concurrency: 1`, `estimate: false`, `temporalWindowMinutes: 15`, `consensusThreshold: 0.6`, `dedupeThreshold: 0`
+- Config fixtures must include `concurrency: 1`, `estimate: false`, `temporalWindowMinutes: 5`, `consensusThreshold: 0.6`, `dedupeThreshold: 0`
 - Mocks must use `LLMClient` interface, never `vi.mock('openai')`
 
 ### 6. Lint (WARN)
-Run: `npm run lint`
+Run: `pnpm run lint`
 
 ### 7. console.log hygiene (WARN)
 - `console.log` allowed only in `src/utils/logger.ts` and `src/utils/progress.ts`

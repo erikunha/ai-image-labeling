@@ -8,7 +8,8 @@ Improve batch or reclassify prompt accuracy for a specific domain or failure pat
 
 Read both prompts:
 - `src/analyzer/batch.ts` → `buildBatchPrompt()` — used for initial batch classification
-- `src/analyzer/index.ts` → reclassify prompt inside `reclassifyUnknowns()`
+- `src/analyzer/index.ts` → `reclassifyUnknowns()` — automatic third pass that re-analyzes `unknown`/low-confidence images (always runs unless `--dry-run`)
+- `src/analyzer/critique.ts` → `runSelfCritique()` — optional self-critique fourth pass (`--self-critique` flag). This runs only when explicitly requested and flags any images that are inconsistent with their neighbors.
 
 Identify which one is responsible for the described failure.
 
@@ -52,7 +53,7 @@ Compare unknown rate before and after.
 
 If the prompt structure changed (new instruction, new format requirement):
 - Update `tests/analyzer/batch.test.ts` — especially the prompt content assertions
-- Verify `npm test` still passes
+- Verify `pnpm test` still passes
 
 ## Step 7 — Document
 

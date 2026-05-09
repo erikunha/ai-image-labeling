@@ -35,7 +35,7 @@ function makeConfig(): Config {
     flagName: defaultValue,  // ← add here
     concurrency: 1,
     estimate: false,
-    temporalWindowMinutes: 15,
+    temporalWindowMinutes: 5,
     consensusThreshold: 0.6,
     dedupeThreshold: 0,
   };
@@ -50,9 +50,9 @@ In the appropriate test file under `tests/`, add:
 
 ### 7. Verify
 ```bash
-npm run typecheck
-npm test
-npm run lint
+pnpm run typecheck
+pnpm test
+pnpm run lint
 ```
 
 ### 8. Update `CLAUDE.md`

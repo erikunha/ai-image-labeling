@@ -41,8 +41,8 @@ Common locations:
 
 ### 6. Verify
 ```bash
-npm run typecheck   # must be zero errors
-npm test            # all tests pass, coverage above thresholds
+pnpm run typecheck   # must be zero errors
+pnpm test            # all tests pass, coverage above thresholds
 ```
 
 ### 7. Update `CLAUDE.md`

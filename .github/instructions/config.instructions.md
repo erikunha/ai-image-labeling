@@ -29,7 +29,7 @@ When adding a new field to `CategoryConfigSchema`, also update the `CategoryConf
 3. Wire in `loadConfig()`: `cliOptions.foo ?? process.env['FOO'] ?? default`
 4. Add `.option(...)` to `src/cli/index.ts`
 5. Add to `src/cli/help.ts` options table
-6. Add the new field to ALL `makeConfig()` fixtures in `tests/` — TypeScript will flag missing fields unless `as Config` is used (don't do that). Current full list of required Config fields that are commonly omitted: `concurrency: 1`, `estimate: false`, `temporalWindowMinutes: 15`, `consensusThreshold: 0.6`, `dedupeThreshold: 0`
+6. Add the new field to ALL `makeConfig()` fixtures in `tests/` — TypeScript will flag missing fields unless `as Config` is used (don't do that). Current full list of required Config fields that are commonly omitted: `concurrency: 1`, `estimate: false`, `temporalWindowMinutes: 5`, `consensusThreshold: 0.6`, `dedupeThreshold: 0`
 
 ## Key validation
 

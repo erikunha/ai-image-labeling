@@ -79,7 +79,7 @@ After creating `.github/skills/<name>/SKILL.md`:
 
 - Read the SKILL.md back and mentally walk through the steps as if you were an agent
 - Confirm every file reference exists in the codebase
-- Run `npm test` to ensure no accidental changes broke anything
+- Run `pnpm test` to ensure no accidental changes broke anything
 
 ## Example output (directory structure)
 

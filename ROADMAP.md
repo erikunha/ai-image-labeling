@@ -387,15 +387,181 @@ Atomic write (tmp+rename). Rebuilt when `analysis_results.json` is newer than th
 
 ## Horizon 12 — ML Pipeline Integration (v2.4)
 
-> **Goal:** Make classified datasets directly usable by ML training pipelines and annotation tools. COCO and YOLO exports, Label Studio integration, and dataset versioning close the loop for ML teams who currently use the tool to pre-label data before fine-tuning. This activates the Persona 5 (Data/ML Teams) market segment.
+> **Goal:** Make classified datasets directly usable by ML training pipelines and annotation tools. COCO and YOLO exports here mean **image classification** datasets (whole-image class labels), not object detection (no bounding boxes). This is a real and useful export for training image classifiers (ViT, ResNet, EfficientNet). Users who need per-object bounding boxes will need to add them via a human annotation tool (Label Studio). The roadmap does not overpromise object detection capability.
 
 | Item | Description | Status |
 |---|---|---|
-| H12.1 COCO JSON export | `--output-format coco`: generates `annotations.json` in COCO object-detection format. Categories map to COCO `categories[]`. `shortDescription` and `elements` populate `captions`. Images without bounding boxes get whole-image annotations. | 🔵 |
-| H12.2 YOLO label export | `--output-format yolo`: generates per-image `.txt` label files and `classes.txt`. Whole-image bounding boxes (0 0 1 1 normalized) as the default annotation. Compatible with Ultralytics YOLOv8 training pipeline. | 🔵 |
+| H12.1 COCO JSON export | `--output-format coco`: generates `annotations.json` in COCO image-classification format. Categories map to COCO `categories[]`. `fullDescription` populates `captions`. Suitable for training image classifiers. Not object-detection format — no per-object bounding boxes. | 🔵 |
+| H12.2 YOLO label export | `--output-format yolo`: generates per-image `.txt` label files and `classes.txt`. Compatible with Ultralytics YOLOv8 `classify` training mode. Whole-image bounding boxes (0 0 1 1 normalized) are valid for classification but not detection. | 🔵 |
 | H12.3 Label Studio XML export | `--output-format label-studio`: generates Label Studio import XML with pre-filled classification annotations. Human annotators review and correct LLM labels, then export back for `--learn` injection. Closes the active-learning loop. | 🔵 |
 | H12.4 Dataset versioning manifest | `analysis_history.json` — append-only log of every completed run: timestamp, categoriesHash, imageCount, model, provider, unknownRate, avgConfidence. Written alongside `analysis_results.json`. Enables drift detection across runs. SDK exports `readRunHistory()`. | 🔵 |
 | H12.5 Category filter flags | `--include-categories kitchen,bathroom` / `--exclude-categories unknown` — skip analysis or output for images outside the filter. Useful for partial re-runs, cost reduction on targeted categories, and building category-specific training sets. | 🔵 |
+
+---
+
+## Horizon 13 — Search Infrastructure Upgrade (v2.5)
+
+> **Goal:** Replace the naive string scan and JSON flat-file vector index with a proper search engine.
+> The current architecture hits hard walls at a few thousand images: O(n) keyword scan, full-index load per query (117 MB at 10K images with OpenAI embeddings), no BM25 scoring, no stemming, no hybrid ranking.
+> H13 does not add a new runtime dependency — it uses the existing `better-sqlite3` dep and FTS5 (SQLite built-in).
+
+| Item | Description | Status |
+|---|---|---|
+| H13.1 Embedding model + dimension tracking (P0 bug) | `IndexFile` stores no `embeddingModel` or `dimensions`. Switching providers (OpenAI 1536-dim → Google 768-dim) silently produces a mixed-dim index; cosine returns 0 for all entries with no error. Fix: add `embeddingModel` and `dimensions` fields; validate on load; bump `INDEX_SCHEMA_VERSION` to 2. | 🔵 |
+| H13.2 SQLite FTS5 search index | Replace keyword string-scan with SQLite FTS5 (BM25 scoring, stemming, prefix matching). New `analysis_search.db`. FTS5 virtual table indexes `shortDescription`, `fullDescription`, `elements`, `extractedText`, `category`. `--rebuild-index` flag. Zero new dep — `better-sqlite3` already ships. | 🔵 |
+| H13.3 Float32 vector quantization + BLOB storage | Store vectors as `Float32Array` BLOB in SQLite instead of JSON float64 text. 117 MB → ~59 MB at 10K OpenAI images. ~0.01% cosine recall loss. 2–3x faster scan from binary vs JSON parse. Auto-migrates old JSON index on first `--rebuild-index`. | 🔵 |
+| H13.4 Hybrid search + Reciprocal Rank Fusion | Merge BM25 and cosine scores with RRF: `score = 1/(k+rank_keyword) + 1/(k+rank_semantic)`. Single `search` subcommand — no more `--keyword` vs `--semantic` mode choice. Each mode fetches top-2K candidates; RRF re-ranks. Consistently outperforms either mode alone. | 🔵 |
+| H13.5 Metadata filter flags | `--filter-category <name>`, `--filter-min-confidence <0-1>`, `--filter-session <id>`, `--filter-after <date>`. Applied as SQL WHERE before ranking — filter before score, not after (otherwise topK semantics break). | 🔵 |
+| H13.6 Staleness detection | After every analysis run, compare cache image count against index. If stale: `[warn] Search index is out of date (87 new images). Run: ai-image-labeling search --rebuild-index`. On `--watch`, queue incremental update after each batch. | 🔵 |
+
+---
+
+### H13.1 — Embedding model + dimension tracking (P0)
+
+**Root cause:** `IndexFile` in `src/search/index.ts` has `schemaVersion`, `generatedAt`, `entries[]` — no `embeddingModel`, no `dimensions`.
+
+**Failure mode:** User runs `--embed --provider openai` (1536 dims). Switches to `--provider google` and re-runs `--embed` (768 dims). New query vector is 768-dim. The `a.length !== b.length -> return 0` guard in `cosineSimilarity` silently returns zero similarity for all old entries. Search returns empty. No warning.
+
+**Fix schema:**
+```typescript
+interface IndexFile {
+  schemaVersion: 2;
+  embeddingModel: string;   // "text-embedding-3-small"
+  dimensions: number;       // 1536
+  generatedAt: string;
+  entries: EmbeddingEntry[];
+}
+```
+On load: if `dimensions !== queryVector.length` throw actionable error: "Index was built with text-embedding-3-small (1536 dims) but query vector is 768 dims. Run --embed to rebuild."
+
+---
+
+### H13.2 — SQLite FTS5 search index
+
+SQLite FTS5 is a full-text search engine built into every SQLite binary. Zero new dependency. `better-sqlite3` exposes it already.
+
+**Schema:**
+```sql
+CREATE TABLE images_meta (
+  number INTEGER PRIMARY KEY, category TEXT, confidence REAL,
+  original_file TEXT, output_file TEXT, timestamp_ms INTEGER, session_id TEXT,
+  vector BLOB  -- Float32Array, NULL if not embedded
+);
+
+CREATE VIRTUAL TABLE images_fts USING fts5(
+  number UNINDEXED, category, short_description, full_description,
+  elements, extracted_text,
+  content='images_meta', content_rowid='number',
+  tokenize='unicode61 remove_diacritics 1'
+);
+```
+
+**Keyword query:** `SELECT number, rank FROM images_fts WHERE images_fts MATCH ? ORDER BY rank`
+
+**Why this beats `.includes()`:**
+- "crack" matches "cracked", "cracking", "micro-crack" (stemming + prefix)
+- BM25 weights rare terms — "asbestos" outranks "wall" even if both match
+- Multi-term: "water damage tiles" ranks all-three-term images first
+- ~100x faster at 10K+ images (inverted index vs full-scan)
+
+---
+
+### H13.4 — Hybrid search + Reciprocal Rank Fusion
+
+Semantic search misses exact text matches. Keyword search misses synonyms. RRF merges both lists without needing to normalize scores to the same scale — the only input is rank position.
+
+```typescript
+function reciprocalRankFusion(
+  keyword: RankedResult[], semantic: RankedResult[], k = 60
+): RankedResult[] {
+  const scores = new Map<number, number>();
+  keyword.forEach(({ number }, rank) =>
+    scores.set(number, (scores.get(number) ?? 0) + 1 / (k + rank + 1)));
+  semantic.forEach(({ number }, rank) =>
+    scores.set(number, (scores.get(number) ?? 0) + 1 / (k + rank + 1)));
+  return [...scores.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([number, score]) => ({ number, score, file: '' }));
+}
+```
+k=60 is the standard empirically validated constant from the original RRF paper (Cormack et al. 2009).
+
+---
+
+## Horizon 14 — Embedding Quality and Retrieval Intelligence (v2.6)
+
+> **Goal:** Raise the quality ceiling beyond what LLM-description text can deliver.
+> The hard limit of H9: retrieval quality is bounded by description quality. CLIP bypasses this.
+> Query expansion and re-ranking are incremental wins within the current embedding approach.
+
+| Item | Description | Status |
+|---|---|---|
+| H14.1 Query expansion via LLM | Before embedding a search query, call the LLM to expand it: "crack" -> ["crack", "fracture", "fissure", "hairline crack", "spall"]. Embed the expanded terms and average the vectors (centroid). Dramatically improves recall for domain vocabulary mismatches. `--expand-query` flag. Single cheap LLM call (~$0.001). | 🔵 |
+| H14.2 Multi-modal image embeddings (CLIP) | Embed actual image pixels instead of LLM description text. Provider: Ollama `nomic-embed-vision` (free, local). Enables "find images visually similar to this reference photo" queries. Bypasses the description-quality ceiling entirely. `--embed-mode vision` flag. Separate `analysis_vision.index.db` to coexist with text embeddings. | 🔵 |
+| H14.3 Parallel embedding calls | `generateEmbeddings` is currently sequential. Parallelize with `p-limit(5)` — 5x throughput. At 1K images: ~1000s -> ~200s. `p-limit` is already a production dep. | 🔵 |
+| H14.4 Incremental index updates | On `--watch` or partial re-runs, compute the delta (new/removed image numbers) and INSERT/DELETE only changed rows. Do not rebuild the full FTS5 index. Enables live search on continuously growing collections. Requires H13.2. | 🔵 |
+| H14.5 Re-ranking pass (cross-encoder) | After hybrid retrieval returns top-20 candidates, run a cross-encoder (Ollama `bge-reranker-v2-m3`) to score each (query, fullDescription) pair jointly. Cross-encoders see both texts simultaneously — much better precision than bi-encoder cosine. `--rerank` flag. ~200ms for 20 candidates on local Ollama. | 🔵 |
+
+---
+
+### H14.1 — Query expansion detail
+
+Query expansion works best when user vocabulary doesn't match LLM vocabulary. A lawyer searching "water ingress" should match images described as "moisture penetration", "damp patches", "efflorescence." The LLM picked one term per image; the user picks another.
+
+**LLM prompt:** `List 6-8 synonyms or related visual terms for: "{query}". Return a JSON array of strings only.`
+**Result:** embed each synonym, compute centroid vector, use centroid as query vector.
+**Cost:** one LLM call per search query. With Anthropic: ~$0.002. With Ollama: free.
+**Offline mode:** user-supplied `synonyms.json` file for deterministic air-gapped expansion.
+
+---
+
+### H14.2 — CLIP / multi-modal embeddings — the real moat
+
+Text-of-text embeddings have a hard ceiling: you are searching descriptions, not images. Two identical images described differently rank far apart; two different images described identically rank together.
+
+**CLIP jointly embeds images and text in the same vector space.** Embed a photo -> vector. Embed "red couch" -> vector. Cosine similarity between them is meaningful.
+
+**Local path (zero API cost):** Ollama `nomic-embed-vision`. POST the Sharp-resized JPEG bytes to `/api/embed`. Same `embedWithOllama` infrastructure, new model name.
+
+**Why this is the long-term moat:**
+- Users can query by uploading a reference image ("find images that look like this")
+- Seasonal/condition changes are visible in pixels even when LLM described both as "wall"
+- Works on images the LLM got wrong
+- No description quality dependency
+
+---
+
+## Horizon 15 — Collection Scale (v2.7)
+
+> **Goal:** Handle collections that exceed what in-process flat arrays can serve.
+> Everything below is gated on user evidence. Trigger: any collection above 50K images on a single node.
+> Do not build ahead of demand.
+
+| Item | Description | Status |
+|---|---|---|
+| H15.1 ANN index (HNSW) | At >50K images, brute-force cosine is ~500ms per query. Switch to HNSW via `hnswlib-node` (native binding, prebuilt binaries). O(log n) queries — ~5ms at 1M vectors. Auto-activated when `entries.length > 50_000`. Falls back to flat scan below threshold. | 🔵 |
+| H15.2 Worker thread pool (H3.6/H5.1 final carry) | Profile with `clinic.js flamegraph` on 500-image run. If Sharp overlay pass appears in top 3 hotspots, implement `piscina` pool. Do pool + streaming pipeline together — two rewrites is waste. Unlock condition: profiling evidence, not speculation. | ⏸ |
+| H15.3 Cache sharding for large collections | `analysis_results.json` is a flat array. At 100K images it is ~150 MB. Shard by session or date bucket. Main cache becomes a shard index. Unlock condition: a user reporting >50K images in a single collection. | 🔵 |
+
+---
+
+### H15.1 — HNSW detail
+
+HNSW (Malkov and Yashunin, 2018) is the dominant ANN algorithm in production vector stores (Pinecone, Weaviate, Qdrant, Milvus all use it). It builds a multi-layer proximity graph where each node links to its M nearest neighbors. Query traversal starts at the top layer and greedily descends.
+
+**`hnswlib-node` in practice:**
+- Native Node.js binding, prebuilt binaries on npm (same pattern as `better-sqlite3`)
+- `HierarchicalNSW` with `'cosine'` space, 1536 or 768 dimensions
+- Build: O(n log n), one-time
+- Query: O(log n), ~5ms at 1M vectors
+- Persists to binary file on disk
+- Incremental insert/delete supported
+
+**Threshold:** HNSW only activates when `entries.length > 50_000`. Below that, flat JavaScript cosine is under 50ms. The threshold is configurable: `--vector-index-threshold 50000`.
+
+---
+
+tchen,bathroom` / `--exclude-categories unknown` — skip analysis or output for images outside the filter. Useful for partial re-runs, cost reduction on targeted categories, and building category-specific training sets. | 🔵 |
 
 ---
 
@@ -422,5 +588,10 @@ Atomic write (tmp+rename). Rebuilt when `analysis_results.json` is newer than th
 | Hybrid | Cloud cost with 80/20 local/cloud split | ≤ $0.0002/image |
 | SDK | Usable in 5 lines without reading CLI source | Pass |
 | Learn | Correction rate after 3 `--learn` runs | ≤ 3% |
-| Search | P50 query latency on 10K-image index | ≤ 100ms |
+| Search | P50 keyword query latency (FTS5, 10K images) | ≤ 20ms |
+| Search | P50 semantic query latency (flat cosine, 10K images) | ≤ 100ms |
+| Search | P50 hybrid query latency (RRF, 10K images) | ≤ 150ms |
 | Search | Semantic recall@10 on held-out test queries | ≥ 0.80 |
+| Search | Hybrid recall@10 improvement over semantic-only | ≥ +0.10 |
+| Embed | Embedding throughput with parallel calls (1K images) | ≤ 60s |
+| Scale | ANN query latency (HNSW, 100K images) | ≤ 10ms |

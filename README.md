@@ -2,7 +2,7 @@
 
 > AI-powered image classification, timestamp overlay, and sequential organization — runs entirely from the terminal.
 
-[![CI](https://github.com/YOUR_USERNAME/ai-image-labeling/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/ai-image-labeling/actions/workflows/ci.yml)
+[![CI](https://github.com/erikunha/ai-image-labeling/actions/workflows/ci.yml/badge.svg)](https://github.com/erikunha/ai-image-labeling/actions/workflows/ci.yml)
 [![npm version](https://badge.fury.io/js/ai-image-labeling.svg)](https://www.npmjs.com/package/ai-image-labeling)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -148,7 +148,7 @@ Results are cached to `analysis_results.json` — subsequent runs with `--skip-a
 ## Development
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/ai-image-labeling
+git clone https://github.com/erikunha/ai-image-labeling
 cd ai-image-labeling
 npm install
 cp .env.example .env  # add your OPENAI_API_KEY

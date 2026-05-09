@@ -23,7 +23,7 @@ zero to a passing pull request.
 
 ```bash
 # 1. Fork and clone
-git clone https://github.com/YOUR_USERNAME/ai-image-labeling.git
+git clone https://github.com/erikunha/ai-image-labeling.git
 cd ai-image-labeling
 
 # 2. Install dependencies (includes dev deps)

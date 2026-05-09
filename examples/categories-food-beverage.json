@@ -1,0 +1,59 @@
+{
+  "description": "Food and beverage product photography — menus, recipe development, social media content",
+  "timezone": "UTC",
+  "categories": [
+    {
+      "name": "hero_plated",
+      "description": "Hero shot of a plated dish, styled and ready to serve",
+      "examples": ["restaurant plating", "styled dish", "overhead flat-lay", "side-angle dish shot"]
+    },
+    {
+      "name": "ingredient_raw",
+      "description": "Raw or unprocessed ingredients — produce, meat, dairy, grains",
+      "examples": ["fresh vegetables", "raw meat", "whole spices", "loose flour", "cheese block"]
+    },
+    {
+      "name": "preparation_process",
+      "description": "In-progress cooking or preparation — chopping, mixing, cooking",
+      "examples": ["chopping board", "mixing bowl", "frying pan", "kneading dough", "sauce simmering"]
+    },
+    {
+      "name": "baked_goods_pastry",
+      "description": "Bread, pastry, cakes, biscuits, or confectionery",
+      "examples": ["loaf of bread", "croissant", "cake slice", "biscuits", "tart"]
+    },
+    {
+      "name": "beverage_hot",
+      "description": "Hot drink — coffee, tea, hot chocolate",
+      "examples": ["espresso", "latte art", "teapot", "hot chocolate", "cappuccino"]
+    },
+    {
+      "name": "beverage_cold",
+      "description": "Cold drink — juice, cocktail, water, beer, wine, soft drink",
+      "examples": ["cocktail", "smoothie", "glass of wine", "beer", "iced coffee", "juice"]
+    },
+    {
+      "name": "packaging_label",
+      "description": "Product packaging, jar, can, bottle, or label close-up",
+      "examples": ["jar label", "can", "bottle label", "sauce packet", "shrink-wrap product"]
+    },
+    {
+      "name": "table_setting",
+      "description": "Full table setting, restaurant ambience, or styled scene",
+      "examples": ["table layout", "place setting", "restaurant interior", "picnic spread"]
+    },
+    {
+      "name": "dessert_sweet",
+      "description": "Desserts, ice cream, chocolate, sweets, or sweet snacks",
+      "examples": ["ice cream scoop", "chocolate brownie", "macarons", "fruit tart", "cheesecake"]
+    },
+    {
+      "name": "nutritional_label",
+      "description": "Nutritional information panel, ingredient list, or allergen label",
+      "examples": ["nutrition facts", "ingredient list", "allergen table", "per-100g panel"]
+    }
+  ],
+  "pinnedLast": ["nutritional_label", "unknown"],
+  "immune": ["nutritional_label"],
+  "overridable": ["unknown"]
+}

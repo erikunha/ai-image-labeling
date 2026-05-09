@@ -1,0 +1,59 @@
+{
+  "description": "Legal document classification — contracts, court filings, correspondence, and evidence",
+  "timezone": "UTC",
+  "categories": [
+    {
+      "name": "contract",
+      "description": "Signed or unsigned agreement between two or more parties",
+      "examples": ["lease agreement", "service contract", "NDA", "purchase agreement"]
+    },
+    {
+      "name": "court_filing",
+      "description": "Document filed with a court — pleadings, motions, judgments, orders",
+      "examples": ["claim form", "defense statement", "court order", "judgment", "injunction"]
+    },
+    {
+      "name": "correspondence",
+      "description": "Formal letters, legal notices, demand letters, solicitor communications",
+      "examples": ["letter before action", "notice to quit", "solicitor letter", "cease and desist"]
+    },
+    {
+      "name": "invoice_bill",
+      "description": "Invoice, bill, or statement of account relevant to a dispute or claim",
+      "examples": ["invoice", "bill", "statement of account", "repair quote"]
+    },
+    {
+      "name": "evidence_photo",
+      "description": "Photograph submitted as evidence — damage, scene, injury",
+      "examples": ["damage photo", "site photo", "injury photo", "scene of incident"]
+    },
+    {
+      "name": "identification",
+      "description": "Identity documents — passport, driving licence, national ID",
+      "examples": ["passport", "driving licence", "national ID card"]
+    },
+    {
+      "name": "financial_record",
+      "description": "Bank statements, payslips, tax returns, financial evidence",
+      "examples": ["bank statement", "payslip", "P60", "tax return", "accounts"]
+    },
+    {
+      "name": "witness_statement",
+      "description": "Signed written statement from a witness",
+      "examples": ["witness statement", "statutory declaration", "affidavit"]
+    },
+    {
+      "name": "expert_report",
+      "description": "Report from a professional expert — surveyor, doctor, accountant",
+      "examples": ["surveyor report", "medical report", "expert opinion", "valuation"]
+    },
+    {
+      "name": "screenshot_digital",
+      "description": "Screenshot of a digital communication — email, chat, social media, website",
+      "examples": ["email screenshot", "WhatsApp chat", "social media post", "website screenshot"]
+    }
+  ],
+  "pinnedLast": ["unknown"],
+  "immune": ["identification"],
+  "overridable": ["unknown"]
+}

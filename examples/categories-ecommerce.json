@@ -1,0 +1,49 @@
+{
+  "description": "E-commerce product photography categories",
+  "timezone": "UTC",
+  "categories": [
+    {
+      "name": "front_view",
+      "description": "Main product shot from the front",
+      "examples": ["product facing forward", "label visible", "hero shot"]
+    },
+    {
+      "name": "back_view",
+      "description": "Product shot from the back",
+      "examples": ["back label", "ingredients list", "barcode"]
+    },
+    {
+      "name": "side_view",
+      "description": "Product shot from the side or at an angle",
+      "examples": ["profile view", "angled shot"]
+    },
+    {
+      "name": "detail_shot",
+      "description": "Close-up of a specific feature, texture, or component",
+      "examples": ["stitching detail", "texture close-up", "clasp zoom"]
+    },
+    {
+      "name": "lifestyle",
+      "description": "Product shown in use or in a real-world setting",
+      "examples": ["model wearing item", "product on desk", "in-situ shot"]
+    },
+    {
+      "name": "packaging",
+      "description": "Product packaging, box, or shipping material",
+      "examples": ["box", "bag", "unboxing"]
+    },
+    {
+      "name": "size_reference",
+      "description": "Product next to a reference object or measurements shown",
+      "examples": ["ruler", "coin", "hand for scale"]
+    },
+    {
+      "name": "color_variant",
+      "description": "Multiple color or finish options of the same product",
+      "examples": ["color swatches", "side-by-side variants"]
+    }
+  ],
+  "pinnedLast": ["unknown"],
+  "immune": [],
+  "overridable": ["unknown"]
+}

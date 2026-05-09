@@ -378,10 +378,10 @@ Atomic write (tmp+rename). Rebuilt when `analysis_results.json` is newer than th
 
 | Item | Description | Status |
 |---|---|---|
-| H11.1 Progression detection | Within a linked group (`--link-images`), detect temporal sequences where the same subject changes over time (e.g., a crack widening, a construction site advancing). Adds `progression?: { type: 'worsening' \| 'improving' \| 'stable', linkedNumbers: number[] }` to `ProcessedResult`. New `src/analyzer/progression.ts` module — pure, no I/O. | 🔵 |
-| H11.2 Session reconstruction | Cluster images into coherent "sessions" (e.g., a single site visit) based on timestamp gaps > `--session-gap <minutes>` (default: 60). Writes `sessions[]` to the analysis cache. CSV/XLSX/SQLite reporters include session ID per image. Enables per-session HTML report sections. | 🔵 |
-| H11.3 Multi-model consensus (H6.2 carry) | `--consensus-providers openai,anthropic`: run the same batch through two providers, take majority vote per image. When providers disagree, flag the image as `lowConsensus: true` in `ProcessedResult`. Adds a consensus-confidence report section to the HTML output. Accuracy improvement for high-stakes runs (legal, medical). | 🔵 |
-| H11.4 `diff` subcommand | `ai-image-labeling diff --before ./output-v1 --after ./output-v2` — compares two `analysis_results.json` caches and reports: new images, removed images, category changes, confidence changes. Outputs a diff table and optionally a `diff_report.html`. Useful for auditing re-runs after taxonomy changes. | 🔵 |
+| H11.1 Progression detection | Aborted — domain-specific assumptions (crack, mold, worsening, etc.) violate the domain-agnostic principle. The tool provides labeling infrastructure; users configure domain semantics via `categories.json`. | ❌ |
+| H11.2 Session reconstruction | `--session-gap <minutes>`: cluster images into sessions by timestamp gap. `Session` type written to `AnalysisCache.sessions[]`; each `ProcessedResult` gets `sessionId`. Pure `buildSessions()` in `src/analyzer/sessions.ts`. | ✅ |
+| H11.3 Multi-model consensus (H6.2 carry) | `--consensus-providers openai,anthropic`: run both providers in parallel, pick higher-confidence result on disagreement, flag with `lowConsensus: true`. Pure `runConsensus()` in `src/analyzer/consensus.ts`. | ✅ |
+| H11.4 `diff` subcommand | `ai-image-labeling diff <before> <after>`: compare two `analysis_results.json` files; reports added/removed/category-changed/confidence-changed. JSON output with `--output-format json`. Pure `diffCaches()` in `src/diff/index.ts`. | ✅ |
 
 ---
 

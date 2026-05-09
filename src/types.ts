@@ -1,5 +1,13 @@
 export type LinkRelation = 'same_location' | 'same_defect' | 'progression';
 
+/** A temporal cluster of images captured in a single continuous session. */
+export interface Session {
+  readonly sessionId: number;
+  readonly startMs: number;
+  readonly endMs: number;
+  readonly imageNumbers: number[];
+}
+
 export interface ImageLink {
   readonly number: number;
   readonly relation: LinkRelation;
@@ -66,6 +74,10 @@ export interface ProcessedResult {
   readonly extractedText: string | null;
   readonly timestamp: number;
   readonly relatedImages?: ImageLink[];
+  /** Session cluster this image belongs to (set when --session-gap is used). */
+  readonly sessionId?: number;
+  /** True when two providers disagreed on this image's category (--consensus-providers). */
+  readonly lowConsensus?: boolean;
 }
 
 /** Increment when the cache format changes in a breaking way. */
@@ -115,6 +127,8 @@ export interface AnalysisCache {
   readonly overrides?: ReviewOverride[];
   /** Files excluded by the user during --interactive review. */
   readonly skipped?: string[];
+  /** Session clusters computed when --session-gap is used. */
+  readonly sessions?: Session[];
 }
 
 /** Intermediate cache written after each completed batch for crash recovery. */

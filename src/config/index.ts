@@ -193,6 +193,17 @@ export interface Config {
    * analysis_embeddings.index.json. Requires a supported embedding provider.
    */
   readonly embed: boolean;
+  /**
+   * Split images into sessions at gaps larger than this many minutes.
+   * Undefined disables session reconstruction. Default when enabled: 60.
+   */
+  readonly sessionGapMinutes?: number;
+  /**
+   * Two provider names for multi-model consensus, e.g. ['openai', 'anthropic'].
+   * When set, both providers analyse every batch and majority vote decides the category.
+   * Disagreements are flagged with `lowConsensus: true` on the ProcessedResult.
+   */
+  readonly consensusProviders?: readonly string[];
   /** Bearer token required on all non-health routes when set. Reads from SERVER_API_KEY env var. */
   readonly serveApiKey?: string;
   /** Max requests per minute per source IP for the REST server. No limit when undefined. */
@@ -261,6 +272,8 @@ export interface RawCliOptions {
   vertexLocation?: string;
   outputBucket?: string;
   embed?: boolean;
+  sessionGapMinutes?: number;
+  consensusProviders?: string[];
   serveApiKey?: string;
   serveRateLimit?: number;
   serveLogRequests?: boolean;
@@ -480,6 +493,8 @@ export async function loadConfig(cliOptions: RawCliOptions): Promise<Config> {
     vertexLocation,
     outputBucket: cliOptions.outputBucket ?? process.env['OUTPUT_BUCKET'],
     embed: cliOptions.embed ?? false,
+    sessionGapMinutes: cliOptions.sessionGapMinutes,
+    consensusProviders: cliOptions.consensusProviders,
     serveApiKey: cliOptions.serveApiKey ?? process.env['SERVER_API_KEY'],
     serveRateLimit: cliOptions.serveRateLimit,
     serveLogRequests: cliOptions.serveLogRequests ?? false,

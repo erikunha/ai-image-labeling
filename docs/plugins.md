@@ -1,6 +1,6 @@
 # Plugin System
 
-`ai-image-labeling` ships a lifecycle hook API that lets you run custom logic at three points in a run — without modifying the CLI source or forking the project.
+`ai-image-labeling` ships a lifecycle hook API that lets you run custom logic at three points in a run without modifying the CLI source or forking the project.
 
 ---
 
@@ -42,16 +42,16 @@ interface Plugin {
 ```
 For each batch of images:
   1. LLM analysis completes → onImageAnalysed(analyzedImage)
-     ↳ category is the raw LLM output — not yet adjusted by temporal consensus
+     └─ category is the raw LLM output — not yet adjusted by temporal consensus
 
 After all batches complete:
   2. Temporal consensus voting  (may change categories)
-  3. Self-critique pass          (may reclassify, if --self-critique)
-  4. Cross-image linking         (adds relatedImages, if --link)
+  3. Self-critique pass         (may reclassify, if --self-critique)
+  4. Cross-image linking        (adds relatedImages, if --link)
 
 For each image (in final sorted order):
   5. JPEG processed + renamed → onImageProcessed(processedResult)
-     ↳ category and relatedImages are final here
+     └─ category and relatedImages are final here
 
 After all images:
   6. analysis_results.json written atomically → onRunComplete(cache)
@@ -72,8 +72,9 @@ interface AnalyzedImage {
   analysis: {
     category: string;
     shortDescription: string;
+    fullDescription: string;   // max 250 chars; empty string if the LLM returned none
     elements: string[];
-    confidence: number;       // 0.0–1.0
+    confidence: number;        // 0.0–1.0
     extractedText: string | null;
   };
 }
@@ -84,15 +85,18 @@ interface AnalyzedImage {
 ```typescript
 interface ProcessedResult {
   originalFile: string;
-  outputFile: string;         // renamed output filename
+  outputFile: string;           // renamed output filename
   category: string;
-  number: number;             // sequence number in the run
+  number: number;               // sequence number in the run
   shortDescription: string;
+  fullDescription?: string;     // absent in pre-existing caches written before this field was added
   elements: string[];
   confidence: number;
   extractedText: string | null;
   timestamp: number;
-  relatedImages?: Array<{ number: number; relation: 'same_location' | 'same_defect' | 'progression' }>;
+  sessionId?: string;           // set if --session-gap was used; groups images into shooting sessions
+  lowConsensus?: boolean;       // true if two providers disagreed (--consensus-providers)
+  relatedImages?: Array<{ number: number; relation: string }>;
 }
 ```
 
@@ -101,11 +105,17 @@ interface ProcessedResult {
 ```typescript
 interface AnalysisCache {
   schemaVersion: number;
-  processedDate: string;       // ISO 8601
+  processedDate: string;        // ISO 8601
   totalImages: number;
   categories: string[];
-  categoriesHash: string;      // SHA-256 (12 hex) of sorted category names
+  categoriesHash: string;       // SHA-256 (12 hex) of sorted category names
   images: ProcessedResult[];
+  sessions?: Array<{            // present if --session-gap was used
+    id: string;
+    imageNumbers: number[];
+    startTime: number;
+    endTime: number;
+  }>;
   pluginApiVersion?: number;
   overrides?: ReviewOverride[];
   skipped?: string[];
@@ -128,7 +138,7 @@ if (PLUGIN_API_VERSION !== 1) {
 }
 ```
 
-When a breaking change to the `Plugin` interface is made, `PLUGIN_API_VERSION` will be incremented and the change will be documented in `CHANGELOG.md`.
+When a breaking change to the `Plugin` interface is made, `PLUGIN_API_VERSION` will be incremented and the change documented in `CHANGELOG.md`.
 
 ---
 
@@ -232,3 +242,4 @@ export default {
 - **`onImageAnalysed` sees the raw LLM category.** It fires before temporal consensus and self-critique, so the category may still change. Use `onImageProcessed` if you need the final, corrected category.
 - **Use `onRunComplete` for aggregates.** All per-image data is available in `cache.images`; this is the right place for summaries, uploads, or report generation.
 - **The SDK exports `PLUGIN_API_VERSION`.** Import it to guard against future breaking changes.
+- **`sessionId` groups burst sessions.** If `--session-gap` was used, images in `cache.images` will have a `sessionId` field. Use it to group related images in your output.

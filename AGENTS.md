@@ -22,7 +22,8 @@ pnpm run check          # lint + typecheck + coverage (full pre-PR suite)
 | Directory | Allowed imports | Forbidden imports |
 |---|---|---|
 | `src/utils/` | Node stdlib only | OpenAI, Sharp, fs-extra |
-| `src/analyzer/client.ts` | utils/, config/, types, all LLM SDKs | processor/, classifier/ |
+| `src/analyzer/providers/*.ts` | utils/, config/, types, the single provider SDK for that file | processor/, classifier/, other provider SDKs |
+| `src/analyzer/client.ts` | utils/, config/, types, `src/analyzer/providers/` | any LLM SDK directly, processor/, classifier/ |
 | `src/analyzer/batch.ts` | utils/, config/, types, LLMClient, Sharp (resize) | LLM SDKs directly, processor/ |
 | `src/analyzer/dedup.ts` | utils/, config/, types, Sharp (dHash) | LLM SDKs directly, processor/ |
 | `src/analyzer/async-batch.ts` | utils/, config/, types, AsyncBatchClient, Sharp | LLM SDKs directly, processor/ |
@@ -37,6 +38,8 @@ pnpm run check          # lint + typecheck + coverage (full pre-PR suite)
 | `src/cli/` | config/, index, utils/logger | analyzer/, processor/, classifier/ |
 | `src/index.ts` | All src/ modules | external packages directly |
 
+`src/analyzer/client.ts` is a thin routing layer. It must not import any provider SDK directly — all SDK imports live in `src/analyzer/providers/<provider>.ts`.
+
 ## ESM import rule
 
 All relative imports must end in `.js` even when the source file is `.ts`:
@@ -48,7 +51,7 @@ import { logger } from './logger';    // WRONG — breaks at runtime
 
 ## Key types
 
-- `AnalysisResult` — LLM output: `{ category, shortDescription, elements, confidence, extractedText }`
+- `AnalysisResult` — LLM output: `{ category, shortDescription, fullDescription, elements, confidence, extractedText }`
 - `ProcessedResult` — final per-image record in `analysis_results.json`
 - `AnalysisCache` / `PartialAnalysisCache` — on-disk JSON cache
 - `AsyncJobState` — on-disk `analysis_job.json` for `--async` / `--resume`
@@ -60,21 +63,68 @@ import { logger } from './logger';    // WRONG — breaks at runtime
 ```typescript
 function makeConfig(overrides: Partial<Config> = {}): Config {
   return {
-    inputDir: './input', outputDir: './output',
+    inputDir: './input',
+    outputDir: './output',
     categoryConfig: {
       categories: [{ name: 'kitchen', description: 'Kitchen area' }],
-      pinnedLast: [], immune: [], overridable: [], timezone: 'UTC',
+      pinnedLast: [],
+      immune: [],
+      overridable: [],
+      timezone: 'UTC',
     },
-    provider: 'openai', apiKey: 'test-key', anthropicApiKey: '', googleApiKey: '',
-    model: 'gpt-4o', batchSize: 5, maxRetries: 2, retryDelayMs: 0, delayBetweenCallsMs: 0,
-    dryRun: false, skipAnalysis: false, forceSkipAnalysis: false,
-    asyncBatch: false, resumeBatch: false,
-    outputFormat: 'json', logFormat: 'pretty', verbose: false, quiet: false,
-    concurrency: 1, estimate: false, temporalWindowMinutes: 15,
-    consensusThreshold: 0.6, dedupeThreshold: 0, timing: false,
+    provider: 'openai',
+    apiKey: 'test-key',
+    anthropicApiKey: '',
+    googleApiKey: '',
+    azureEndpoint: '',
+    azureApiKey: '',
+    ollamaUrl: 'http://localhost:11434',
+    bedrockRegion: 'us-east-1',
+    bedrockAccessKeyId: '',
+    bedrockSecretAccessKey: '',
+    vertexProjectId: '',
+    vertexLocation: 'us-central1',
+    model: 'gpt-4o',
+    batchSize: 5,
+    maxRetries: 2,
+    retryDelayMs: 0,
+    delayBetweenCallsMs: 0,
+    dryRun: false,
+    skipAnalysis: false,
+    forceSkipAnalysis: false,
+    asyncBatch: false,
+    resumeBatch: false,
+    outputFormat: 'json',
+    logFormat: 'pretty',
+    verbose: false,
+    quiet: false,
+    concurrency: 1,
+    estimate: false,
+    temporalWindowMinutes: 5,
+    consensusThreshold: 0.6,
+    dedupeThreshold: 0,
+    timing: false,
     filenameTemplate: '{n}. {description} dated {date}.{ext}',
-    watch: false, watchPoll: false, interactive: false, plugins: [],
-    linkImages: false, linkWindowDays: 7, selfCritique: false, learn: false,
+    watch: false,
+    watchPoll: false,
+    interactive: false,
+    plugins: [],
+    linkImages: false,
+    linkWindowDays: 7,
+    selfCritique: false,
+    learn: false,
+    localModel: 'llava',
+    cloudProvider: 'openai',
+    localConfidenceThreshold: 0.7,
+    embed: false,
+    sessionGapMinutes: undefined,
+    consensusProviders: undefined,
+    webhookUrl: undefined,
+    outputBucket: undefined,
+    activeLearnQueue: false,
+    serveApiKey: undefined,
+    serveRateLimit: undefined,
+    serveLogRequests: false,
     ...overrides,
   };
 }
@@ -87,8 +137,9 @@ function makeConfig(overrides: Partial<Config> = {}): Config {
 const result: AnalysisResult = {
   category: 'kitchen',
   shortDescription: 'Clean kitchen',
+  fullDescription: '',   // max 250 chars; use '' as sentinel default in factories
   elements: ['sink', 'tiles'],
-  confidence: 0,      // sentinel default in factories
+  confidence: 0,         // sentinel default in factories
   extractedText: null,
 };
 ```
@@ -105,7 +156,7 @@ const result: AnalysisResult = {
 
 ## Do NOT
 
-- Import any LLM SDK outside `src/analyzer/client.ts`
+- Import any LLM SDK outside `src/analyzer/providers/*.ts`
 - Import Sharp in `src/analyzer/` except in `batch.ts`, `dedup.ts`, `async-batch.ts`
 - Hardcode category names outside `examples/*.json` and test fixtures
 - Use `any` type without an `// eslint-disable-next-line @typescript-eslint/no-explicit-any` comment

@@ -1,7 +1,6 @@
 # Contributing to ai-image-labeling
 
-Thank you for considering a contribution! This document covers everything you need to go from
-zero to a passing pull request.
+Thank you for considering a contribution. This document covers everything you need to go from zero to a passing pull request.
 
 ---
 
@@ -33,7 +32,7 @@ pnpm install
 cp .env.example .env
 # edit .env → set OPENAI_API_KEY (or ANTHROPIC_API_KEY / GOOGLE_API_KEY)
 
-# 4. Generate test fixture images (100×100 JPEGs used by the test suite)
+# 4. Generate test fixture images (100x100 JPEGs used by the test suite)
 pnpm run fixtures
 
 # 5. Verify everything passes
@@ -46,18 +45,18 @@ pnpm run check
 
 ## Running commands
 
-| Command                                              | Purpose                                          |
-| ---------------------------------------------------- | ------------------------------------------------ |
-| `pnpm run build`                                     | Compile TypeScript → `dist/`                     |
-| `pnpm run typecheck`                                 | Type-check `src/` without emitting               |
-| `pnpm exec tsc -p scripts/tsconfig.json --noEmit`   | Type-check `scripts/` without emitting           |
-| `pnpm run lint`                                      | ESLint                                           |
-| `pnpm run lint:fix`                                  | ESLint with auto-fix                             |
-| `pnpm run format`                                    | Prettier                                         |
-| `pnpm test`                                          | Vitest unit tests (fast, no coverage)            |
-| `pnpm run test:coverage`                             | Vitest with V8 coverage report                   |
-| `pnpm run fixtures`                                  | Regenerate test fixture images                   |
-| `pnpm run check`                                     | lint + typecheck + test:coverage (the full gate) |
+| Command | Purpose |
+|---|---|
+| `pnpm run build` | Compile TypeScript → `dist/` |
+| `pnpm run typecheck` | Type-check `src/` without emitting |
+| `pnpm exec tsc -p scripts/tsconfig.json --noEmit` | Type-check `scripts/` without emitting |
+| `pnpm run lint` | ESLint |
+| `pnpm run lint:fix` | ESLint with auto-fix |
+| `pnpm run format` | Prettier |
+| `pnpm test` | Vitest unit tests (fast, no coverage) |
+| `pnpm run test:coverage` | Vitest with V8 coverage report |
+| `pnpm run fixtures` | Regenerate test fixture images |
+| `pnpm run check` | lint + typecheck + test:coverage (the full gate) |
 
 ---
 
@@ -65,58 +64,102 @@ pnpm run check
 
 Imports between modules are strictly controlled:
 
-| Directory                | Allowed imports                                        | Forbidden                          |
-| ------------------------ | ------------------------------------------------------ | ---------------------------------- |
-| `src/utils/`             | Node stdlib only                                       | OpenAI, Sharp, fs-extra            |
-| `src/analyzer/client.ts` | utils/, config/, types, all three provider SDKs        | processor/, classifier/            |
-| `src/analyzer/`          | utils/, config/, types, LLMClient, Sharp (resize only) | processor/, classifier/, any SDK   |
-| `src/processor/`         | utils/, config/, types, Sharp                          | any LLM SDK, analyzer/             |
-| `src/classifier/`        | config/, types                                         | any LLM SDK, Sharp, fs-extra       |
-| `src/cli/`               | config/, index, utils/logger                           | analyzer/, processor/, classifier/ |
-| `src/index.ts`           | All src/ modules                                       | external packages directly         |
+| Directory | Allowed imports | Forbidden |
+|---|---|---|
+| `src/utils/` | Node stdlib only | OpenAI, Sharp, fs-extra |
+| `src/analyzer/providers/*.ts` | utils/, config/, types, the single provider SDK for that file | processor/, classifier/, other provider SDKs |
+| `src/analyzer/client.ts` | utils/, config/, types, `src/analyzer/providers/` | any LLM SDK directly, processor/, classifier/ |
+| `src/analyzer/` (other files) | utils/, config/, types, LLMClient, Sharp (resize only) | processor/, classifier/, any SDK |
+| `src/processor/` | utils/, config/, types, Sharp | any LLM SDK, analyzer/ |
+| `src/classifier/` | config/, types | any LLM SDK, Sharp, fs-extra |
+| `src/cli/` | config/, index, utils/logger | analyzer/, processor/, classifier/ |
+| `src/index.ts` | All src/ modules | external packages directly |
 
-Violations are caught by ESLint and the `Dev Reviewer` agent.
+`src/analyzer/client.ts` is a thin routing layer — it imports from `src/analyzer/providers/` but must not import any LLM SDK directly. All SDK imports are confined to the per-provider files.
+
+Violations are caught by ESLint and the `code-reviewer` agent.
 
 ---
 
 ## Adding a new LLM provider
 
-1. **Add API key config** — in `src/config/index.ts`:
-   - Add `yourProviderApiKey: string` to the `Config` interface.
-   - Add `YOUR_PROVIDER_API_KEY` to `loadConfig()` (env var + CLI flag precedence).
-   - Add the billing URL to the `BILLING_URL` map in `validateStartup()`.
+### Step 1: Add the provider name to the union type
 
-2. **Implement the adapter** — in `src/analyzer/client.ts`:
-   - Add `'your-provider'` to the `Provider` union type.
-   - Create a `createYourProviderClient(config: Config): LLMClient` function.
-   - Wire it into the `createClient(config)` factory switch.
-
-3. **Add CLI flag** — in `src/cli/index.ts`:
-   - Add `--your-provider-api-key <key>` option to the program.
-   - Pass it through to `loadConfig()`.
-
-4. **Update help text** — in `src/cli/help.ts`.
-
-5. **Write a contract test** (optional, skipped in normal CI) — see `tests/analyzer/client.contract.test.ts`.
-
-6. **Update README** — add the provider to the Quick Start and CLI reference table.
-
-### Skeleton
+In `src/types.ts`, add `'your-provider'` to the `LLMProvider` union:
 
 ```typescript
-// src/analyzer/client.ts
-function createYourProviderClient(config: Config): LLMClient {
-  // Import the SDK at the top of client.ts
-  const client = new YourProviderSDK({ apiKey: config.yourProviderApiKey });
+export type LLMProvider =
+  | 'openai'
+  | 'anthropic'
+  | 'google'
+  | 'azure'
+  | 'ollama'
+  | 'bedrock'
+  | 'vertex'
+  | 'hybrid'
+  | 'your-provider';  // add here
+```
+
+### Step 2: Implement the adapter
+
+Create `src/analyzer/providers/your-provider.ts`. This is the **only** file that may import the provider's SDK:
+
+```typescript
+// src/analyzer/providers/your-provider.ts
+import YourProviderSDK from 'your-provider-sdk';
+import type { Config } from '../../config/index.js';
+import type { LLMClient } from '../client.js';
+
+export function createYourProviderClient(config: Config): LLMClient {
+  const sdk = new YourProviderSDK({ apiKey: config.yourProviderApiKey });
 
   return {
     async complete(prompt, images, opts) {
-      // Build the request payload using `prompt` and `images`
-      // Return { text: string, tokensUsed: number }
+      // Build the request payload using `prompt` and `images`.
+      // Return { text: string, tokensUsed: number }.
     },
   };
 }
 ```
+
+### Step 3: Wire the adapter into the routing layer
+
+In `src/analyzer/client.ts`, import the factory and add a branch in the `createClient` switch:
+
+```typescript
+import { createYourProviderClient } from './providers/your-provider.js';
+
+// Inside createClient(config):
+case 'your-provider':
+  return createYourProviderClient(config);
+```
+
+### Step 4: Add the API key config
+
+In `src/config/index.ts`:
+
+- Add `readonly yourProviderApiKey: string` to the `Config` interface.
+- Read `YOUR_PROVIDER_API_KEY` from the environment in `loadConfig()` and apply CLI flag precedence.
+- Add a default model entry in the `DEFAULT_MODEL` map.
+- Add the billing URL to the `BILLING_URL` map in `validateStartup()`.
+
+### Step 5: Add CLI flags
+
+In `src/cli/index.ts`:
+
+```typescript
+program.option('--your-provider-api-key <key>', 'Your Provider API key');
+```
+
+In `src/cli/help.ts`, add an entry to the provider flags table.
+
+### Step 6: Add a contract test
+
+Add the provider to `tests/analyzer/client.contract.test.ts`. Contract tests are skipped unless `CI_CONTRACT=1` is set, so they do not run in normal CI.
+
+### Step 7: Update .env.example and README.md
+
+Add `YOUR_PROVIDER_API_KEY=` to `.env.example` and add the provider to the Quick Start section and provider feature matrix in `README.md`.
 
 ---
 
@@ -127,38 +170,44 @@ Categories are domain-specific JSON files in `examples/`. The schema:
 ```jsonc
 {
   "description": "Human-readable description of the domain",
-  "timezone": "Europe/London", // IANA timezone string
+  "timezone": "Europe/London",
   "categories": [
-    { "name": "category_name", "description": "Short description for the LLM prompt" },
+    { "name": "category_name", "description": "Short description for the LLM prompt" }
   ],
-  "pinnedLast": ["payment_receipt"], // Always sorted to end of output
-  "immune": ["payment_receipt"], // Never overridden by temporal consensus
-  "overridable": ["unknown"], // Can be overridden by 60%-majority cluster vote
+  "pinnedLast": ["payment_receipt"],
+  "immune": ["payment_receipt"],
+  "overridable": ["unknown"]
 }
 ```
 
-Add your file as `examples/categories-<domain>.json` and test it by pointing `--categories` at it.
+Category names must be `lowercase_snake_case` — validated by Zod at startup.
+
+Add your file as `examples/categories-<domain>.json` and test it with:
+
+```bash
+ai-image-labeling --categories examples/categories-<domain>.json --estimate
+```
 
 ---
 
 ## Adding a CLI flag
 
-1. Add the field to the `Config` interface and `RawCliOptions` in `src/config/index.ts`.
+1. Add the `readonly` field to the `Config` interface and `RawCliOptions` in `src/config/index.ts`.
 2. Parse the env var and provide a default in `loadConfig()`.
 3. Add `program.option('--your-flag <value>', 'Description', defaultValue)` in `src/cli/index.ts`.
 4. Add an entry to the flags table in `src/cli/help.ts`.
 5. Update the CLI reference table in `README.md`.
+6. Add the field to all `makeConfig()` fixtures in `tests/` — the fixture pattern requires every Config field to be present.
 
 ---
 
 ## Testing
 
 - All tests live in `tests/` mirroring `src/`.
-- **Mock the `LLMClient` interface** — do not mock individual SDK constructors.
+- **Mock the `LLMClient` interface** — do not mock individual SDK constructors (`vi.mock('openai')` etc.).
 - **Pure functions** (classifier, overlay math, retry logic) need no mocks.
-- **Processor tests** that need real JPEG files: use `FIXTURES_DIR` from `tests/fixtures/index.ts`.
-  Run `pnpm run fixtures` first if the directory is absent.
-- `src/cli/` and `src/index.ts` are intentionally excluded from coverage (integration territory).
+- **Processor tests** that need real JPEG files: use `FIXTURES_DIR` from `tests/fixtures/index.ts`. Run `pnpm run fixtures` first if the directory is absent.
+- `src/cli/`, `src/index.ts`, and `src/analyzer/client.ts` are intentionally excluded from coverage (integration territory).
 
 ```bash
 # Run all tests
@@ -171,7 +220,7 @@ pnpm exec vitest run tests/utils/exif.test.ts
 pnpm run test:coverage
 ```
 
-Coverage thresholds (enforced in CI): lines ≥ 75%, functions ≥ 85%, branches ≥ 75%.
+Coverage thresholds (enforced in CI): lines >= 75%, functions >= 85%, branches >= 75%.
 
 ---
 
@@ -183,11 +232,12 @@ Before opening a PR, ensure all of the following pass locally:
 - [ ] `pnpm run typecheck` — zero TypeScript errors
 - [ ] `pnpm exec tsc -p scripts/tsconfig.json --noEmit` — zero TypeScript errors in scripts/
 - [ ] `pnpm run test:coverage` — all tests pass, coverage thresholds met
-- [ ] No LLM SDK imported outside `src/analyzer/client.ts`
-- [ ] No `sharp` imported outside `src/processor/` and `src/analyzer/batch.ts`
+- [ ] No LLM SDK imported outside `src/analyzer/providers/*.ts`
+- [ ] No `sharp` imported outside `src/processor/` and `src/analyzer/batch.ts`, `dedup.ts`, `async-batch.ts`
 - [ ] All relative imports use `.js` extension
 - [ ] No new `console.log` outside `src/utils/logger.ts` and `src/utils/progress.ts`
 - [ ] No API keys hardcoded or logged
+- [ ] All `makeConfig()` fixtures include every new Config field
 
 ---
 

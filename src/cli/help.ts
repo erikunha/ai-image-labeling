@@ -41,10 +41,24 @@ ${chalk.bold('OPTIONS')}
   --output-format         <fmt>     pretty | json | none               (default: pretty)
   --log-format            <fmt>     pretty | json                      (default: pretty)
   --timing                          Print per-step wall-time in run summary
-  --filename-template     <pattern> Output filename template            (default: "{n}. Photo of {category} dated {date}")
-                                    Tokens: {n} (zero-padded), {category}, {date} (DD-MM-YYYY),
-                                            {datetime} (DD-MM-YYYY_HH-MM), {description} (slug)
-                                    Template must include {n} to guarantee unique filenames.
+  --filename-template     <pattern> Output filename template
+                                    Default: "{n}. Photo of {category} dated {date}"
+                                    Tokens:
+                                      {n}              sequence number, zero-padded to 3 digits
+                                      {n:4}            zero-padded to N digits  (e.g. 0001, 01)
+                                      {category}       category slug
+                                      {description}    LLM description as a URL-safe slug
+                                      {date}           DD-MM-YYYY  (legacy shorthand)
+                                      {date:FORMAT}    custom date — FORMAT uses:
+                                                         YYYY  4-digit year    YY  2-digit year
+                                                         MM    month (01-12)    M  month (1-12)
+                                                         DD    day   (01-31)    D  day   (1-31)
+                                      {datetime}       DD-MM-YYYY_HH-MM  (legacy shorthand)
+                                      {datetime:FORMAT} custom datetime — FORMAT also accepts:
+                                                         HH    hour  (00-23)    H  hour  (0-23)
+                                                         mm    minute (00-59)   m  minute (0-59)
+                                                         ss    second (00-59)   s  second (0-59)
+                                    Template must include {n} or {n:N} to guarantee unique names.
   --watch                           Watch input directory for new images and process automatically
   --watch-poll                      Use polling for watch mode (required on NFS/SMB/Docker mounts)
   --interactive                     Review and override LLM classifications before processing (requires TTY)
@@ -177,8 +191,14 @@ ${chalk.bold('EXAMPLES')}
   # Use Ollama (local, no API key needed)
   ${chalk.cyan('ai-image-labeling --provider ollama --model llava')}
 
-  # Custom filename template with datetime and description slug
-  ${chalk.cyan("ai-image-labeling --filename-template '{n}_{datetime}_{description}'")}
+  # Custom filename template — 4-digit number, ISO date, description slug
+  ${chalk.cyan("ai-image-labeling --filename-template '{n:4}. {category} {date:YYYY-MM-DD} {description}'")}
+
+  # Custom date format with slashes and time
+  ${chalk.cyan("ai-image-labeling --filename-template '{n}_{datetime:YYYY-MM-DD_HH-mm}_{description}'")}
+
+  # 2-digit sequence number, European date
+  ${chalk.cyan("ai-image-labeling --filename-template '{n:2}. {category} {date:DD.MM.YYYY}'")}
 
   # Watch input directory and process new images as they arrive
   ${chalk.cyan('ai-image-labeling --watch')}

@@ -139,8 +139,15 @@ export interface Config {
   /** When true, print per-step wall-time breakdown in the run summary. */
   readonly timing: boolean;
   /**
-   * Output filename template. Must contain {n}.
-   * Tokens: {n}, {category}, {date}, {datetime}, {description}.
+   * Output filename template. Must contain {n} or {n:N}.
+   * Tokens:
+   *   {n} or {n:N}          — sequence number, zero-padded to N digits (default 3)
+   *   {category}            — image category slug
+   *   {description}         — LLM description as a URL-safe slug
+   *   {date}                — DD-MM-YYYY (legacy shorthand)
+   *   {date:FORMAT}         — custom date: YYYY YY MM DD M D
+   *   {datetime}            — DD-MM-YYYY_HH-MM (legacy shorthand)
+   *   {datetime:FORMAT}     — custom datetime: adds HH H mm m ss s
    */
   readonly filenameTemplate: string;
   /** When true, watch inputDir for new images and process them incrementally. */
@@ -295,9 +302,8 @@ export const REORDER_SENTINEL_KEY = 'reorder-no-key-needed';
 
 /**
  * Default output filename template.
- * Tokens: {n} (zero-padded sequence), {category}, {date} (DD-MM-YYYY),
- * {datetime} (DD-MM-YYYY_HH-MM), {description} (slug-ified LLM description).
- * The template MUST include {n} to guarantee unique filenames.
+ * The template MUST include {n} or {n:N} to guarantee unique filenames.
+ * See Config.filenameTemplate for the full token reference.
  */
 export const DEFAULT_FILENAME_TEMPLATE = '{n}. Photo of {category} dated {date}';
 
@@ -589,10 +595,10 @@ export async function validateStartup(config: Config): Promise<void> {
     throw new Error('[error] categories.json must define at least one category.');
   }
 
-  // Filename template must include {n} to guarantee unique output filenames
-  if (!config.filenameTemplate.includes('{n}')) {
+  // Filename template must include {n} or {n:N} to guarantee unique output filenames
+  if (!/{n(?::\d+)?}/.test(config.filenameTemplate)) {
     throw new Error(
-      `[error] --filename-template must include the {n} token to guarantee unique filenames.\n` +
+      `[error] --filename-template must include {n} or {n:N} to guarantee unique filenames.\n` +
         `  Got: "${config.filenameTemplate}"`,
     );
   }

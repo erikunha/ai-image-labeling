@@ -1,0 +1,109 @@
+name: Accuracy Benchmark
+
+on:
+  schedule:
+    - cron: '0 4 * * 0' # every Sunday at 04:00 UTC
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: 'Provider to benchmark (openai | anthropic | google | all)'
+        required: false
+        default: 'all'
+      update_baseline:
+        description: 'Update baseline.json with current results (true/false)'
+        required: false
+        default: 'false'
+
+jobs:
+  benchmark:
+    name: Accuracy Regression — ${{ matrix.provider }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        provider:
+          - openai
+          - anthropic
+          - google
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Generate fixture images (if needed)
+        run: pnpm exec tsx scripts/generate-fixtures.ts
+
+      - name: Run benchmark — ${{ matrix.provider }}
+        run: pnpm exec tsx scripts/benchmark.ts --provider ${{ matrix.provider }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          BENCHMARK_PROVIDER: ${{ matrix.provider }}
+
+      - name: Check for regression vs baseline
+        run: pnpm exec tsx scripts/benchmark.ts --provider ${{ matrix.provider }} --check-regression
+        if: github.event.inputs.update_baseline != 'true'
+
+      - name: Update baseline (manual trigger only)
+        if: github.event.inputs.update_baseline == 'true'
+        run: pnpm exec tsx scripts/benchmark.ts --provider ${{ matrix.provider }} --update-baseline
+
+      - name: Commit updated baseline
+        if: github.event.inputs.update_baseline == 'true'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'chore: update benchmark baseline [${{ matrix.provider }}]'
+          file_pattern: tests/fixtures/benchmark/baseline.json
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-${{ matrix.provider }}
+          path: reports/benchmark/
+          retention-days: 90
+
+      - name: Post results to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const results = JSON.parse(
+              fs.readFileSync(`reports/benchmark/${{ matrix.provider }}.json`, 'utf8')
+            );
+            const { precision, recall, unknownRate, costPer30, p95LatencyMs } = results.summary;
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: [
+                `## Benchmark — ${{ matrix.provider }}`,
+                `| Metric | Value |`,
+                `|--------|-------|`,
+                `| Precision | ${(precision * 100).toFixed(1)}% |`,
+                `| Recall | ${(recall * 100).toFixed(1)}% |`,
+                `| Unknown rate | ${(unknownRate * 100).toFixed(1)}% |`,
+                `| Cost / 30 imgs | $${costPer30.toFixed(4)} |`,
+                `| P95 latency | ${p95LatencyMs}ms |`,
+              ].join('\n')
+            });

@@ -1,0 +1,87 @@
+name: Mutation Testing
+
+on:
+  # Full sweep every Monday — catches drift even when no PR touches these files
+  schedule:
+    - cron: '0 3 * * 1'
+  # Targeted run on PRs that touch the pure-logic modules Stryker covers.
+  # Mutation is slow (~10 min); limiting by path keeps PR feedback fast.
+  pull_request:
+    paths:
+      - 'src/classifier/**'
+      - 'src/analyzer/temporal.ts'
+      - 'tests/classifier/**'
+      - 'tests/analyzer/temporal.test.ts'
+      - 'stryker.config.mjs'
+  workflow_dispatch:
+    inputs:
+      mutate_only:
+        description: 'Limit mutation to a specific file (e.g. src/classifier/rules.ts)'
+        required: false
+        default: ''
+
+jobs:
+  mutation:
+    name: Stryker Mutation Score
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Run mutation tests
+        run: pnpm exec stryker run ${{ github.event.inputs.mutate_only && format('--mutate "{0}"', github.event.inputs.mutate_only) || '' }}
+        env:
+          # Stryker uses the compiled JS; no API keys needed (all LLM calls are mocked)
+          NODE_ENV: test
+
+      - name: Upload mutation report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stryker-report
+          path: reports/mutation/
+          retention-days: 30
+
+      - name: Comment mutation score on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            let body;
+            try {
+              const report = JSON.parse(fs.readFileSync('reports/mutation/mutation.json', 'utf8'));
+              const score = report.metrics?.mutationScore?.toFixed(1) ?? 'N/A';
+              const killed = report.metrics?.killed ?? '?';
+              const survived = report.metrics?.survived ?? '?';
+              const threshold = 70;
+              const status = parseFloat(score) >= threshold ? '✅' : '❌';
+              body = `## ${status} Mutation Score: ${score}%\n\n| Metric | Count |\n|---|---|\n| Killed | ${killed} |\n| Survived | ${survived} |\n\nThreshold: ${threshold}% — [Full report](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`;
+            } catch {
+              body = '## Mutation Testing\n\nReport not available — Stryker may have failed. Check the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}).';
+            }
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });
+

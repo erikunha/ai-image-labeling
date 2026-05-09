@@ -1,0 +1,53 @@
+name: PR Description
+
+on:
+  pull_request:
+    types: [opened]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  describe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Add PR checklist comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const body = pr.body || '';
+
+            // Only add checklist if the PR body is sparse
+            if (body.trim().length > 100) return;
+
+            const checklist = `
+            ## PR Checklist
+
+            Thank you for your contribution! Before this PR can be merged, please verify:
+
+            - [ ] \`pnpm run lint\` passes with no errors
+            - [ ] \`pnpm run typecheck\` passes with no errors
+            - [ ] \`pnpm exec tsc -p scripts/tsconfig.json --noEmit\` passes (scripts type-check)
+            - [ ] \`pnpm test\` passes — all tests green
+            - [ ] New behavior is covered by unit tests
+            - [ ] No API keys or secrets are committed
+            - [ ] All relative imports use \`.js\` extension (ESM / NodeNext)
+            - [ ] \`README.md\` updated if CLI flags or behavior changed
+            - [ ] Commit messages follow Conventional Commits (\`feat:\`, \`fix:\`, \`test:\`, etc.)
+
+            > _This comment was added automatically by the PR workflow._
+            `;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: checklist,
+            });

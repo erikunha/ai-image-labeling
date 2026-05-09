@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+
+# Environment — NEVER commit real keys
+.env
+.env.local
+.env.*.local
+
+# Raw image data — keep out of git (use examples/ for sample data)
+input/
+output/
+!output/.gitkeep
+!examples/
+
+# Generated test fixtures — reproducible via `npm run fixtures`
+tests/fixtures/images/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/settings.json
+*.log
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Generated API docs
+docs/api/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Hook output (secrets-scanner, test-gate)
+logs/
+
+# Claude Code local overrides (machine-specific permissions)
+.claude/settings.local.json

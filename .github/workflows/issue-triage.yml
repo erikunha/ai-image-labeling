@@ -1,0 +1,50 @@
+name: Issue Triage
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Label issue with Copilot
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issue = context.payload.issue;
+            const body = (issue.body || '').toLowerCase();
+            const title = (issue.title || '').toLowerCase();
+            const text = `${title} ${body}`;
+
+            const labels = [];
+            if (text.includes('bug') || text.includes('error') || text.includes('crash') || text.includes('fail')) {
+              labels.push('bug');
+            }
+            if (text.includes('feature') || text.includes('add') || text.includes('support') || text.includes('request')) {
+              labels.push('enhancement');
+            }
+            if (text.includes('doc') || text.includes('readme') || text.includes('example')) {
+              labels.push('documentation');
+            }
+            if (text.includes('openai') || text.includes('api') || text.includes('gpt') || text.includes('quota')) {
+              labels.push('openai');
+            }
+            if (text.includes('category') || text.includes('classif')) {
+              labels.push('classification');
+            }
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels,
+              });
+            }

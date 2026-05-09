@@ -1,0 +1,59 @@
+{
+  "description": "Receipt and invoice classification for expense management and accounting",
+  "timezone": "UTC",
+  "categories": [
+    {
+      "name": "restaurant_cafe",
+      "description": "Receipt from a restaurant, café, bar, or food delivery service",
+      "examples": ["restaurant bill", "café receipt", "Uber Eats receipt", "bar tab"]
+    },
+    {
+      "name": "travel_transport",
+      "description": "Receipt for transport — taxi, rideshare, train, flight, parking",
+      "examples": ["Uber receipt", "train ticket", "flight receipt", "parking charge", "fuel receipt"]
+    },
+    {
+      "name": "accommodation",
+      "description": "Hotel, Airbnb, or other accommodation invoice",
+      "examples": ["hotel invoice", "Airbnb receipt", "serviced apartment bill"]
+    },
+    {
+      "name": "office_supplies",
+      "description": "Stationery, printer cartridges, office consumables",
+      "examples": ["stationery receipt", "printer paper", "pens and notebooks"]
+    },
+    {
+      "name": "software_subscription",
+      "description": "SaaS, cloud service, or software licence invoice",
+      "examples": ["AWS invoice", "Adobe subscription", "Microsoft 365", "Slack invoice"]
+    },
+    {
+      "name": "hardware_equipment",
+      "description": "Computer, phone, peripherals, or equipment purchase",
+      "examples": ["laptop receipt", "monitor invoice", "keyboard purchase", "mobile phone"]
+    },
+    {
+      "name": "professional_services",
+      "description": "Invoice for professional services — legal, accounting, consulting, agency",
+      "examples": ["solicitor invoice", "accountant fee", "consultant invoice", "agency retainer"]
+    },
+    {
+      "name": "utilities",
+      "description": "Electricity, gas, water, broadband, or phone bill",
+      "examples": ["electricity bill", "broadband invoice", "mobile phone bill", "water bill"]
+    },
+    {
+      "name": "marketing_advertising",
+      "description": "Advertising spend — Google Ads, social media, print",
+      "examples": ["Google Ads invoice", "Meta ads receipt", "print advertising"]
+    },
+    {
+      "name": "other_expense",
+      "description": "Any other legitimate business expense not covered above",
+      "examples": ["miscellaneous receipt", "conference ticket", "charity donation receipt"]
+    }
+  ],
+  "pinnedLast": ["other_expense", "unknown"],
+  "immune": [],
+  "overridable": ["unknown", "other_expense"]
+}

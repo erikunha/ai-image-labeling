@@ -31,7 +31,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run docs:generate
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: docs/api
       - uses: actions/deploy-pages@v4

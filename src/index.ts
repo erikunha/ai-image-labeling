@@ -11,6 +11,8 @@ import { createAsyncBatchClient, createLLMClient } from './analyzer/client.js';
 import { generateEmbeddings } from './analyzer/embeddings.js';
 import { suggestCategories } from './analyzer/suggest.js';
 import { linkImages } from './analyzer/linker.js';
+import { buildSessions } from './analyzer/sessions.js';
+import { runConsensus } from './analyzer/consensus.js';
 import { deduplicateImages } from './analyzer/dedup.js';
 import { analyzeImages } from './analyzer/index.js';
 import { buildIndex, defaultIndexPath } from './search/index.js';
@@ -41,8 +43,11 @@ import type {
   Plugin,
   ProcessedResult,
   ReviewOverride,
+  Session,
 } from './types.js';
 import { CACHE_SCHEMA_VERSION, PLUGIN_API_VERSION } from './types.js';
+import { diffCaches } from './diff/index.js';
+export type { DiffSummary } from './diff/index.js';
 import { printCostEstimate } from './utils/cost.js';
 import { getImageTimestamp } from './utils/exif.js';
 import { logger } from './utils/logger.js';
@@ -284,6 +289,7 @@ export async function runBatch(
   let overrideCount = 0;
   let tDedupMs = 0;
   let tAnalysisMs = 0;
+  const consensusLowFiles = new Set<string>();
 
   if (config.skipAnalysis || config.forceSkipAnalysis) {
     const cacheFile = path.join(config.outputDir, CACHE_FILE_NAME);
@@ -430,7 +436,21 @@ export async function runBatch(
 
     try {
       const t0Analysis = Date.now();
-      const { images: newlyAnalyzed, overrideCount: tc } = await analyzeImages(
+
+      // H11.3 — Multi-model consensus: run two providers in parallel when configured
+      let analysisFn: typeof analyzeImages;
+      if (config.consensusProviders && config.consensusProviders.length >= 2) {
+        logger.info(`\n Running consensus analysis (${config.consensusProviders.join(' + ')})...`);
+        analysisFn = async (files, cfg) => {
+          const result = await runConsensus(files, cfg, [...config.consensusProviders!]);
+          for (const f of result.lowConsensusFiles) consensusLowFiles.add(f);
+          return { images: result.images, overrideCount: 0 };
+        };
+      } else {
+        analysisFn = analyzeImages;
+      }
+
+      const { images: newlyAnalyzed, overrideCount: tc } = await analysisFn(
         uniqueFiles,
         config,
         (processed, batch, tokensUsed, inputTokens, outputTokens) => {
@@ -523,6 +543,7 @@ export async function runBatch(
         confidence: img.analysis.confidence,
         extractedText: img.analysis.extractedText,
         timestamp: img.createdAt,
+        ...(consensusLowFiles.has(img.file) ? { lowConsensus: true } : {}),
       };
       processedResults.push(processedResult);
       sequenceNumber++;
@@ -647,6 +668,23 @@ async function postAnalysisPipeline(
     });
   }
 
+  // 1b. Session reconstruction (--session-gap): cluster images into sessions by time gap
+  let sessions: Session[] | undefined;
+  if (config.sessionGapMinutes && config.sessionGapMinutes > 0) {
+    const { sessions: builtSessions, sessionMap } = buildSessions(
+      processedResults,
+      config.sessionGapMinutes,
+    );
+    sessions = builtSessions;
+    processedResults = processedResults.map((r) => {
+      const sid = sessionMap.get(r.number);
+      return sid !== undefined ? { ...r, sessionId: sid } : r;
+    });
+    logger.info(
+      `\n Sessions: ${sessions.length} session(s) identified (gap: ${config.sessionGapMinutes} min)`,
+    );
+  }
+
   // 2. Fire onImageProcessed for each result — after relatedImages is set (H7.5)
   for (const result of processedResults) {
     await fireOnImageProcessed(plugins, result);
@@ -698,6 +736,7 @@ async function postAnalysisPipeline(
       ...(plugins.length > 0 ? { pluginApiVersion: PLUGIN_API_VERSION } : {}),
       ...(reviewOverrides.length > 0 ? { overrides: reviewOverrides } : {}),
       ...(reviewSkipped.length > 0 ? { skipped: reviewSkipped } : {}),
+      ...(sessions && sessions.length > 0 ? { sessions } : {}),
     };
     finalCache = cache;
     const cacheFile = path.join(config.outputDir, CACHE_FILE_NAME);
@@ -999,6 +1038,46 @@ export async function runSearch(
     logger.info(`  [${r.number}] score=${score} cat=${r.category}`);
     logger.info(`       file: ${r.file}`);
     logger.info(`       ${r.shortDescription}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// runDiff
+// ---------------------------------------------------------------------------
+export async function runDiff(
+  beforePath: string,
+  afterPath: string,
+  outputFormat: 'pretty' | 'json' = 'pretty',
+): Promise<void> {
+  if (!(await fs.pathExists(beforePath))) {
+    throw new Error(`File not found: ${beforePath}`);
+  }
+  if (!(await fs.pathExists(afterPath))) {
+    throw new Error(`File not found: ${afterPath}`);
+  }
+
+  const before = (await fs.readJSON(beforePath)) as AnalysisCache;
+  const after = (await fs.readJSON(afterPath)) as AnalysisCache;
+  const summary = diffCaches(before, after);
+
+  if (outputFormat === 'json') {
+    process.stdout.write(JSON.stringify(summary, null, 2) + '\n');
+    return;
+  }
+
+  logger.info(`\n Diff: ${beforePath} → ${afterPath}\n`);
+  logger.info(
+    `  added: ${summary.added}  removed: ${summary.removed}  ` +
+      `category changed: ${summary.categoryChanged}  confidence changed: ${summary.confidenceChanged}  ` +
+      `unchanged: ${summary.unchanged}`,
+  );
+  for (const d of summary.diffs) {
+    if (d.change === 'unchanged') continue;
+    const arrow = d.change === 'added' ? '+' : d.change === 'removed' ? '-' : '~';
+    const beforeCat = d.before ? d.before.category : '-';
+    const afterCat = d.after ? d.after.category : '-';
+    const confStr = d.confidenceDelta !== undefined ? ` Δconf=${d.confidenceDelta.toFixed(2)}` : '';
+    logger.info(`  [${arrow}] ${d.file}  ${beforeCat} → ${afterCat}${confStr}`);
   }
 }
 

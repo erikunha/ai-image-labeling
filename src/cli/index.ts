@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { loadConfig, REORDER_SENTINEL_KEY } from '../config/index.js';
 import {
   runBatch,
+  runDiff,
   runReorder,
   runReport,
   runSearch,
@@ -138,6 +139,14 @@ program
     'Generate text embeddings for each image after analysis and write analysis_embeddings.index.json',
     false,
   )
+  .option(
+    '--session-gap <minutes>',
+    'Split images into sessions at gaps larger than this many minutes (e.g. 60)',
+  )
+  .option(
+    '--consensus-providers <p1,p2>',
+    'Two comma-separated providers for multi-model consensus, e.g. "openai,anthropic"',
+  )
   .addHelpCommand(false)
   .helpOption(false)
   .action(async (opts: Record<string, string | boolean>) => {
@@ -197,6 +206,15 @@ program
         vertexLocation: opts['vertexLocation'] as string | undefined,
         outputBucket: opts['outputBucket'] as string | undefined,
         embed: Boolean(opts['embed']),
+        sessionGapMinutes: opts['sessionGap']
+          ? parseFloat(opts['sessionGap'] as string)
+          : undefined,
+        consensusProviders: opts['consensusProviders']
+          ? (opts['consensusProviders'] as string)
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : undefined,
         verbose: Boolean(opts['verbose']),
         quiet: Boolean(opts['quiet']),
       });
@@ -488,6 +506,23 @@ program
         outputFormat: outputFmt === 'json' ? 'json' : 'pretty',
         config,
       });
+    } catch (error) {
+      logger.error(String((error as Error).message));
+      process.exit(1);
+    }
+  });
+
+// Diff subcommand
+program
+  .command('diff <before> <after>')
+  .description('Compare two analysis_results.json files and show what changed')
+  .option('--output-format <fmt>', 'Output format: pretty | json', 'pretty')
+  .option('-q, --quiet', 'Suppress non-error output', false)
+  .action(async (before: string, after: string, opts: Record<string, string | boolean>) => {
+    configureLogger({ quiet: Boolean(opts['quiet']) });
+    try {
+      const outputFmt = opts['outputFormat'] as string;
+      await runDiff(before, after, outputFmt === 'json' ? 'json' : 'pretty');
     } catch (error) {
       logger.error(String((error as Error).message));
       process.exit(1);

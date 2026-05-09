@@ -6,6 +6,7 @@ ${chalk.bold('ai-image-labeling')} — AI-powered image classification and organ
 
 ${chalk.bold('USAGE')}
   ai-image-labeling [OPTIONS]
+  ai-image-labeling diff <before> <after> [--output-format json]
   ai-image-labeling suggest-categories [OPTIONS]
   ai-image-labeling serve [OPTIONS]
   ai-image-labeling reorder
@@ -52,9 +53,24 @@ ${chalk.bold('OPTIONS')}
   --webhook               <url>     POST results to this URL after each run completes
   --output-bucket         <uri>     Write outputs to cloud storage (s3://, gs://, azblob://)
   --embed                           Generate text embeddings after analysis (writes analysis_embeddings.index.json)
+  --session-gap           <minutes> Split images into sessions at gaps larger than this many minutes
+  --consensus-providers   <p1,p2>   Two comma-separated providers for multi-model consensus (e.g. "openai,anthropic")
+                                    Images where providers disagree are flagged with lowConsensus: true
   --verbose, -v                     Show detailed debug logs
   --quiet, -q                       Suppress all non-error output
   --help, -h                        Show this help
+
+${chalk.bold('DIFF SUBCOMMAND')}
+  ai-image-labeling diff <before> <after> [OPTIONS]
+
+  Compare two analysis_results.json files and show what changed between runs.
+  Useful for auditing re-analysis after updating categories.json or model.
+
+  --output-format <fmt>  pretty | json  (default: pretty)
+
+  Examples:
+    ${chalk.cyan('ai-image-labeling diff ./output/analysis_results.json ./output_v2/analysis_results.json')}
+    ${chalk.cyan('ai-image-labeling diff before.json after.json --output-format json')}
 
 ${chalk.bold('SEARCH SUBCOMMAND')}
   ai-image-labeling search [OPTIONS]

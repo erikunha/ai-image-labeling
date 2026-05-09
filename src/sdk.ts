@@ -25,6 +25,7 @@ export { loadConfig } from './config/index.js';
 export type { CategoryConfig, Config, LogFormat, OutputFormat } from './config/index.js';
 export {
   runBatch,
+  runDiff,
   runReport,
   runReorder,
   runServe,
@@ -32,6 +33,12 @@ export {
   runSuggestCategories,
   runWatch,
 } from './index.js';
+export type { DiffSummary, ChangeType, ImageDiff } from './diff/index.js';
+export { diffCaches } from './diff/index.js';
+export { buildSessions } from './analyzer/sessions.js';
+export type { SessionBuildResult } from './analyzer/sessions.js';
+export { runConsensus } from './analyzer/consensus.js';
+export type { ConsensusResult } from './analyzer/consensus.js';
 export {
   createDefaultClassifier,
   createRequestHandler,
@@ -61,6 +68,7 @@ export type {
   PartialAnalysisCache,
   Plugin,
   ProcessedResult,
+  Session,
 } from './types.js';
 export { generateEmbeddings } from './analyzer/embeddings.js';
 export type { EmbeddingEntry } from './analyzer/embeddings.js';

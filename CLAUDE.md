@@ -69,7 +69,7 @@ npx vitest run tests/analyzer/batch.test.ts
 
 ### Key type definitions (`src/types.ts`)
 
-- `AnalysisResult` — LLM output per image: `{ category, shortDescription, elements, confidence, extractedText }`
+- `AnalysisResult` — LLM output per image: `{ category, shortDescription, fullDescription, elements, confidence, extractedText }`
 - `FileWithStats` → `AnalyzedImage` → `ProcessedResult` — progressive enrichment pipeline
 - `AnalysisCache` / `PartialAnalysisCache` — on-disk JSON cache format
 - `AsyncJobState` — on-disk state for `--async` / `--resume` workflow (`analysis_job.json`)
@@ -168,8 +168,9 @@ function makeConfig(overrides: Partial<Config> = {}): Config {
 const result: AnalysisResult = {
   category: 'kitchen',
   shortDescription: 'Clean kitchen with modern appliances',
+  fullDescription: '',  // max 250 chars; use '' as default in test factories
   elements: ['sink', 'tiles'],
-  confidence: 0,      // 0–1; use 0 as sentinel default in test factories
+  confidence: 0,        // 0–1; use 0 as sentinel default in test factories
   extractedText: null,
 };
 ```

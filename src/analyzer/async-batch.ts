@@ -30,6 +30,8 @@ function parseResult(raw: unknown): AnalysisResult {
     typeof obj['shortDescription'] === 'string' && obj['shortDescription'].trim()
       ? obj['shortDescription'].trim()
       : 'unanalyzed image';
+  const fullDescription =
+    typeof obj['fullDescription'] === 'string' ? obj['fullDescription'].trim() : '';
   const elements = Array.isArray(obj['elements']) ? (obj['elements'] as unknown[]) : [];
   const confidence =
     typeof obj['confidence'] === 'number' &&
@@ -42,6 +44,7 @@ function parseResult(raw: unknown): AnalysisResult {
   return {
     category,
     shortDescription: sanitizeTextField(shortDescription, 200),
+    fullDescription: sanitizeTextField(fullDescription, 250),
     elements: elements
       .filter((e): e is string => typeof e === 'string')
       .map((e) => sanitizeTextField(e, 100)),
@@ -53,6 +56,7 @@ function parseResult(raw: unknown): AnalysisResult {
 const UNKNOWN_RESULT: AnalysisResult = {
   category: 'unknown',
   shortDescription: 'unanalyzed image',
+  fullDescription: '',
   elements: [],
   confidence: 0,
   extractedText: null,

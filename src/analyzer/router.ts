@@ -13,6 +13,7 @@ const IMAGE_RESIZE_PX = 1024;
 const SingleResultSchema = z.object({
   category: z.string().optional(),
   shortDescription: z.string().optional(),
+  fullDescription: z.string().optional(),
   elements: z.array(z.string()).optional(),
   confidence: z.number().optional(),
   extractedText: z.string().optional().nullable(),
@@ -37,6 +38,10 @@ function parseSingleResult(raw: unknown): AnalysisResult {
     shortDescription: sanitizeTextField(
       typeof obj.shortDescription === 'string' ? obj.shortDescription : 'unanalyzed image',
       200,
+    ),
+    fullDescription: sanitizeTextField(
+      typeof obj.fullDescription === 'string' ? obj.fullDescription : '',
+      250,
     ),
     elements: (obj.elements ?? []).map((e) => sanitizeTextField(e, 100)),
     confidence:

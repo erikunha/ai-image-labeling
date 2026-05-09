@@ -19,6 +19,12 @@ export interface AnalysisResult {
   readonly category: string;
   /** One-sentence human-readable description of the image content (max 200 chars). */
   readonly shortDescription: string;
+  /**
+   * Detailed description of everything visible (max 250 chars): all objects,
+   * colors, spatial layout, lighting, context, conditions. Primary corpus for
+   * keyword search. Empty string when analysis failed.
+   */
+  readonly fullDescription: string;
   /** Key visual elements identified in the image (each max 100 chars). */
   readonly elements: string[];
   /** Self-reported model confidence 0.0–1.0. 0 signals unsupported or skipped. */
@@ -69,6 +75,8 @@ export interface ProcessedResult {
   readonly category: string;
   readonly number: number;
   readonly shortDescription: string;
+  /** Detailed description for keyword search (max 250 chars). Absent in pre-existing caches. */
+  readonly fullDescription?: string;
   readonly elements: string[];
   readonly confidence: number;
   readonly extractedText: string | null;

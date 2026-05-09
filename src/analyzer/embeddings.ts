@@ -20,10 +20,11 @@ export interface EmbeddingEntry {
 
 /**
  * Build the embedding input text for a single ProcessedResult.
- * Format: `{category}: {shortDescription}. Elements: {e1, e2, ...}`
+ * Includes fullDescription when present for richer semantic retrieval.
  */
 function buildEmbeddingText(result: ProcessedResult): string {
-  return `${result.category}: ${result.shortDescription}. Elements: ${result.elements.join(', ')}`;
+  const base = `${result.category}: ${result.shortDescription}. Elements: ${result.elements.join(', ')}`;
+  return result.fullDescription ? `${base}. ${result.fullDescription}` : base;
 }
 
 /** Embed a single text string via OpenAI (or Azure OpenAI) using text-embedding-3-small. */

@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "skipPermissions": true,
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "Bash(npm list *)",
+      "Bash(npm test *)",
+      "Bash(npx vitest *)",
+      "Bash(npx tsx *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git status)",
+      "Bash(git show *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(pnpm run typecheck *)",
+      "Bash(pnpm run lint *)",
+      "Bash(pnpm run test *)",
+      "Bash(pnpm run test:coverage *)",
+      "Bash(pnpm test *)",
+      "Bash(pnpm config get *)",
+      "Bash(brew list *)",
+      "Bash(brew search *)"
+    ],
+    "deny": ["Bash(git reset --hard *)", "Bash(rm -rf *)"]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm run typecheck 2>&1 | tail -5"
+          }
+        ]
+      }
+    ]
+  }
+}

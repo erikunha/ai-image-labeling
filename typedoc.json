@@ -1,0 +1,10 @@
+{
+  "entryPoints": ["src/sdk.ts"],
+  "out": "docs/api",
+  "name": "ai-image-labeling SDK",
+  "readme": "none",
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "categorizeByGroup": true,
+  "plugin": []
+}

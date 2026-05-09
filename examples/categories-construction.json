@@ -1,0 +1,79 @@
+{
+  "description": "Construction site progress and defect documentation",
+  "timezone": "UTC",
+  "categories": [
+    {
+      "name": "foundation_substructure",
+      "description": "Foundations, footings, ground floor slab, retaining walls, underground works",
+      "examples": ["concrete slab", "strip foundation", "pile cap", "basement wall", "drainage"]
+    },
+    {
+      "name": "structural_frame",
+      "description": "Structural elements — columns, beams, load-bearing walls, steel frame",
+      "examples": ["steel beam", "concrete column", "block work wall", "timber frame"]
+    },
+    {
+      "name": "roof_structure",
+      "description": "Roof framing, trusses, rafters, roof deck before cladding",
+      "examples": ["roof truss", "rafter", "roof joist", "flat roof deck"]
+    },
+    {
+      "name": "roof_cladding",
+      "description": "Finished roof covering — tiles, slates, felt, EPDM, metal sheeting",
+      "examples": ["roof tiles", "slate", "felt underlay", "EPDM membrane", "metal roof"]
+    },
+    {
+      "name": "external_walls_cladding",
+      "description": "External wall finish — brick, render, cladding, insulation boards",
+      "examples": ["brickwork", "render", "EWI insulation", "rainscreen cladding", "blockwork"]
+    },
+    {
+      "name": "windows_doors",
+      "description": "Window or door installation — frames, glazing, lintels",
+      "examples": ["window frame", "door frame", "glazing", "lintel", "bi-fold doors"]
+    },
+    {
+      "name": "internal_partition",
+      "description": "Internal partition walls — stud walls, blockwork, plasterboard",
+      "examples": ["stud partition", "plasterboard", "block partition", "staggered studs"]
+    },
+    {
+      "name": "mep_first_fix",
+      "description": "First-fix mechanical, electrical, and plumbing — before boarding",
+      "examples": ["pipe runs", "electrical conduit", "cable routing", "duct work", "underfloor heating"]
+    },
+    {
+      "name": "mep_second_fix",
+      "description": "Second-fix MEP — sockets, switches, sanitaryware, heating appliances",
+      "examples": ["socket installation", "radiator", "tap", "WC installation", "light fitting"]
+    },
+    {
+      "name": "plastering_drylining",
+      "description": "Plaster finish, drylining, skim coat, dot-and-dab",
+      "examples": ["wet plaster", "skim coat", "plasterboard dry lining", "dot and dab"]
+    },
+    {
+      "name": "flooring",
+      "description": "Floor finish — screed, tiles, timber, carpet, vinyl",
+      "examples": ["floor screed", "ceramic tiles", "engineered timber", "carpet laying"]
+    },
+    {
+      "name": "defect_damage",
+      "description": "Visible defect, damage, or non-conformance requiring attention",
+      "examples": ["crack", "water ingress", "missing DPC", "substandard workmanship", "void in concrete"]
+    },
+    {
+      "name": "site_overview",
+      "description": "Wide-angle site photo — overall progress, site conditions, crane, hoardings",
+      "examples": ["aerial view", "site entrance", "overall progress shot", "crane", "scaffolding"]
+    },
+    {
+      "name": "material_delivery",
+      "description": "Delivery of materials on site — pallets, bundles, plant",
+      "examples": ["brick delivery", "timber delivery", "skip", "concrete truck", "pallet of blocks"]
+    }
+  ],
+  "pinnedLast": ["defect_damage", "unknown"],
+  "immune": ["defect_damage"],
+  "overridable": ["unknown", "site_overview"]
+}

@@ -1,0 +1,69 @@
+{
+  "description": "Vehicle condition inspection — pre/post-hire, insurance claims, used car sales",
+  "timezone": "UTC",
+  "categories": [
+    {
+      "name": "exterior_front",
+      "description": "Front of the vehicle — bonnet, bumper, grille, headlights",
+      "examples": ["front bumper", "bonnet", "headlights", "number plate", "grille"]
+    },
+    {
+      "name": "exterior_rear",
+      "description": "Rear of the vehicle — boot, rear bumper, taillights, tow bar",
+      "examples": ["rear bumper", "boot lid", "taillights", "number plate", "exhaust"]
+    },
+    {
+      "name": "exterior_driver_side",
+      "description": "Driver's side — door panels, sill, wing mirror",
+      "examples": ["driver door", "front wing", "rear quarter panel", "sill", "wing mirror"]
+    },
+    {
+      "name": "exterior_passenger_side",
+      "description": "Passenger's side — door panels, sill, wing mirror",
+      "examples": ["passenger door", "front wing", "rear quarter panel", "sill"]
+    },
+    {
+      "name": "roof",
+      "description": "Roof panel, sunroof, aerial, or roof rack",
+      "examples": ["roof panel", "sunroof", "aerial", "roof rack", "convertible hood"]
+    },
+    {
+      "name": "wheel_tyre",
+      "description": "Wheel, tyre, brake disc, or alloy close-up",
+      "examples": ["alloy wheel", "tyre tread", "brake disc", "wheel arch", "tyre sidewall"]
+    },
+    {
+      "name": "interior_front",
+      "description": "Dashboard, steering wheel, instrument cluster, front seats",
+      "examples": ["dashboard", "steering wheel", "odometer", "infotainment screen", "front seats"]
+    },
+    {
+      "name": "interior_rear",
+      "description": "Rear passenger area — back seats, headlining, rear footwell",
+      "examples": ["rear seats", "rear footwell", "headlining", "rear door cards"]
+    },
+    {
+      "name": "boot_load_area",
+      "description": "Boot interior, load area, spare wheel well, boot liner",
+      "examples": ["boot interior", "load area", "spare wheel", "boot liner", "parcel shelf"]
+    },
+    {
+      "name": "under_bonnet",
+      "description": "Engine bay — engine, fluid reservoirs, battery, cables",
+      "examples": ["engine bay", "engine block", "coolant reservoir", "battery", "air filter"]
+    },
+    {
+      "name": "damage_scratch_dent",
+      "description": "Visible damage — scratch, dent, scrape, crack, or paint chip",
+      "examples": ["scratch", "dent", "paint chip", "cracked bumper", "kerb rash", "scrape"]
+    },
+    {
+      "name": "document",
+      "description": "Vehicle documents — V5C, service history, MOT certificate, insurance",
+      "examples": ["V5C logbook", "service book", "MOT certificate", "insurance document"]
+    }
+  ],
+  "pinnedLast": ["document", "unknown"],
+  "immune": ["damage_scratch_dent", "document"],
+  "overridable": ["unknown"]
+}

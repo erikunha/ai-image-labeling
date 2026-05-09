@@ -1,0 +1,52 @@
+name: Contract Tests
+
+on:
+  schedule:
+    # Run nightly at 02:00 UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: 'Provider to test (openai|anthropic|google|all)'
+        required: false
+        default: 'all'
+
+jobs:
+  contract:
+    name: Contract — ${{ matrix.provider }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [openai, anthropic, google]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate test fixtures
+        run: pnpm run fixtures
+
+      - name: Run contract tests — ${{ matrix.provider }}
+        env:
+          CI_CONTRACT: '1'
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: >
+          pnpm exec vitest run
+          tests/analyzer/client.contract.test.ts
+          --reporter=verbose

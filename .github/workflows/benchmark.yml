@@ -68,7 +68,7 @@ jobs:
 
       - name: Commit updated baseline
         if: github.event.inputs.update_baseline == 'true'
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: 'chore: update benchmark baseline [${{ matrix.provider }}]'
           file_pattern: tests/fixtures/benchmark/baseline.json

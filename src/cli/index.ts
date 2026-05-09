@@ -80,7 +80,7 @@ program
   .option('--timing', 'Print per-step wall-time breakdown in run summary', false)
   .option(
     '--filename-template <pattern>',
-    'Output filename template (tokens: {n}, {category}, {date}, {datetime}, {description})',
+    'Output filename template — see --help for token reference',
   )
   .option('-v, --verbose', 'Show detailed debug logs', false)
   .option('-q, --quiet', 'Suppress all non-error output', false)
@@ -279,7 +279,7 @@ program
   .option('--categories <file>', 'Path to categories.json')
   .option(
     '--filename-template <pattern>',
-    'Output filename template (tokens: {n}, {category}, {date}, {datetime}, {description})',
+    'Output filename template — see --help for token reference',
   )
   .option('-v, --verbose', 'Verbose output', false)
   .option('-q, --quiet', 'Quiet output', false)

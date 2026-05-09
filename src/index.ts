@@ -213,6 +213,7 @@ export async function runBatch(
       analysis: analysisResults[i] ?? {
         category: 'unknown',
         shortDescription: 'unanalyzed image',
+        fullDescription: '',
         elements: [],
         confidence: 0,
         extractedText: null,
@@ -322,6 +323,7 @@ export async function runBatch(
         analysis: {
           category: r.category,
           shortDescription: r.shortDescription,
+          fullDescription: r.fullDescription ?? '',
           elements: r.elements,
           confidence: r.confidence ?? 0,
           extractedText: r.extractedText ?? null,
@@ -384,6 +386,7 @@ export async function runBatch(
         analysis: results[i] ?? {
           category: 'unknown',
           shortDescription: 'unanalyzed image',
+          fullDescription: '',
           elements: [],
           confidence: 0,
           extractedText: null,
@@ -478,6 +481,7 @@ export async function runBatch(
           analysis: rep?.analysis ?? {
             category: 'unknown',
             shortDescription: 'unanalyzed image',
+            fullDescription: '',
             elements: [],
             confidence: 0,
             extractedText: null,
@@ -539,6 +543,7 @@ export async function runBatch(
         category: img.analysis.category,
         number: sequenceNumber,
         shortDescription: img.analysis.shortDescription,
+        ...(img.analysis.fullDescription ? { fullDescription: img.analysis.fullDescription } : {}),
         elements: img.analysis.elements,
         confidence: img.analysis.confidence,
         extractedText: img.analysis.extractedText,

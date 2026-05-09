@@ -44,6 +44,7 @@ ${buildCategoriesBlock(config.categoryConfig)}
 
 Field guidance:
 - shortDescription: 3-8 words, objective, factual description of what the image shows
+- fullDescription: up to 250 characters describing everything visible — all objects, colors, spatial arrangement, lighting, textures, context and conditions. Be specific; this field powers keyword search
 - elements: key visible elements or objects in the image
 - confidence: your confidence in the classification 0.0–1.0
 - extractedText: any readable text visible in the image (signs, labels, documents, screens). Empty string if none.${feedbackNote}`;
@@ -59,6 +60,7 @@ Respond with EXACTLY ${count} results in order:
       "index": ${startIndex},
       "category": "category_name",
       "shortDescription": "3-8 word description",
+      "fullDescription": "Detailed description up to 250 chars covering all visible objects, colors, spatial layout, lighting, and conditions.",
       "elements": ["element1"],
       "confidence": 0.9,
       "extractedText": ""
@@ -90,6 +92,7 @@ function parseAnalysisResult(raw: unknown): AnalysisResult {
     typeof obj['shortDescription'] === 'string' && obj['shortDescription'].trim()
       ? obj['shortDescription'].trim()
       : 'unanalyzed image';
+  const rawFull = typeof obj['fullDescription'] === 'string' ? obj['fullDescription'].trim() : '';
   const rawElements = Array.isArray(obj['elements']) ? (obj['elements'] as unknown[]) : [];
   const rawConfidence =
     typeof obj['confidence'] === 'number' &&
@@ -102,6 +105,7 @@ function parseAnalysisResult(raw: unknown): AnalysisResult {
   return {
     category: rawCategory,
     shortDescription: sanitizeTextField(rawDesc, 200),
+    fullDescription: sanitizeTextField(rawFull, 250),
     elements: rawElements
       .filter((e): e is string => typeof e === 'string')
       .map((e) => sanitizeTextField(e, 100)),
@@ -176,7 +180,7 @@ export async function analyzeBatch(
         const result = await withRetry(
           () =>
             client.complete(buildUserPrompt(chunk.length, startIndex), imageInputs, {
-              maxTokens: 4000,
+              maxTokens: 6000,
               detail: 'low',
               systemPrompt,
             }),
@@ -222,6 +226,7 @@ export async function analyzeBatch(
         batchResults = chunk.map(() => ({
           category: 'unknown',
           shortDescription: 'unanalyzed image',
+          fullDescription: '',
           elements: [],
           confidence: 0,
           extractedText: null,

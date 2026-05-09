@@ -22,6 +22,7 @@ export interface SearchResult {
   /** Cosine similarity (0–1) for semantic mode; match-field count for keyword mode. */
   readonly score: number;
   readonly shortDescription: string;
+  readonly fullDescription?: string;
 }
 
 /**
@@ -88,6 +89,7 @@ export async function searchSemantic(
       category: img?.category ?? 'unknown',
       score: r.score,
       shortDescription: img?.shortDescription ?? '',
+      ...(img?.fullDescription ? { fullDescription: img.fullDescription } : {}),
     };
   });
 }
@@ -113,6 +115,7 @@ export function searchKeyword(
     .map((img) => {
       let score = 0;
       if (img.shortDescription.toLowerCase().includes(needle)) score++;
+      if (img.fullDescription && img.fullDescription.toLowerCase().includes(needle)) score++;
       for (const el of img.elements) {
         if (el.toLowerCase().includes(needle)) {
           score++;
@@ -133,5 +136,6 @@ export function searchKeyword(
     category: img.category,
     score,
     shortDescription: img.shortDescription,
+    ...(img.fullDescription ? { fullDescription: img.fullDescription } : {}),
   }));
 }

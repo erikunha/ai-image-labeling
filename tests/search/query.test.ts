@@ -94,6 +94,7 @@ function makeResult(number: number, overrides: Partial<ProcessedResult> = {}): P
     outputFile: `${number}. img${number}.jpg`,
     category: 'kitchen',
     shortDescription: 'A clean kitchen with modern appliances',
+    fullDescription: '',
     elements: ['sink', 'refrigerator', 'tiles'],
     confidence: 0.9,
     extractedText: null,
@@ -199,6 +200,38 @@ describe('searchKeyword', () => {
     const results = searchKeyword('crack', nullTextImages, { topK: 10 });
     expect(results).toHaveLength(1);
     expect(results[0]?.number).toBe(20);
+  });
+
+  it('finds matches in fullDescription (case-insensitive)', () => {
+    const testImages: ProcessedResult[] = [
+      makeResult(30, {
+        shortDescription: 'empty room',
+        fullDescription: 'Large television mounted on the wall with a gaming console below.',
+      }),
+      makeResult(31, { shortDescription: 'clean kitchen', fullDescription: '' }),
+    ];
+    const results = searchKeyword('television', testImages, { topK: 10 });
+    expect(results).toHaveLength(1);
+    expect(results[0]?.number).toBe(30);
+  });
+
+  it('includes fullDescription in score and result when matched', () => {
+    const testImages: ProcessedResult[] = [
+      makeResult(40, {
+        shortDescription: 'room with tv',
+        fullDescription: 'A large tv mounted on the wall.',
+      }),
+      makeResult(41, {
+        shortDescription: 'tv on stand',
+        fullDescription: '',
+      }),
+    ];
+    // img40 matches shortDescription + fullDescription (score 2)
+    // img41 matches only shortDescription (score 1)
+    const results = searchKeyword('tv', testImages, { topK: 10 });
+    expect(results[0]?.number).toBe(40);
+    expect(results[0]?.score).toBeGreaterThan(results[1]!.score);
+    expect(results[0]?.fullDescription).toBe('A large tv mounted on the wall.');
   });
 });
 

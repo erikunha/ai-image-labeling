@@ -58,7 +58,7 @@ and consider using `detail: 'high'` for the first pass (higher cost but better a
 
 Read `src/analyzer/temporal.ts`:
 
-- Cluster window: 15 minutes — too short? (photos taken over hours will not cluster)
+- Cluster window: 5 minutes — too short? (photos taken over hours will not cluster)
 - Override threshold: 60% — too aggressive?
 - Is the correct category `immune`? (immune categories are never overridden)
 

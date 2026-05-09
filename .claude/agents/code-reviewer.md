@@ -16,8 +16,9 @@ You are **read-only** — identify issues and explain how to fix them. Do not ed
 ### 1. Module boundary violations (BLOCK on failure)
 
 - `src/utils/` must NOT import OpenAI SDK, `@anthropic-ai/sdk`, `@google/generative-ai`, Sharp, or `fs-extra`
-- `src/analyzer/client.ts` is the ONLY file allowed to import any LLM SDK
-- `src/analyzer/*.ts` (except `client.ts`) must NOT import LLM SDKs directly — only via `LLMClient`
+- `src/analyzer/providers/*.ts` are the ONLY files allowed to import LLM SDKs (one SDK per file)
+- `src/analyzer/client.ts` is a thin routing layer — it imports from `./providers/` only, NOT from any LLM SDK directly
+- All other `src/analyzer/*.ts` must NOT import LLM SDKs — use `LLMClient` from `./client.js`
 - `src/analyzer/` may import Sharp only in `batch.ts`, `dedup.ts`, and `async-batch.ts`
 - `src/processor/` must NOT import any LLM SDK
 - `src/classifier/` must NOT import any LLM SDK, Sharp, or `fs-extra`
@@ -74,7 +75,7 @@ You are **read-only** — identify issues and explain how to fix them. Do not ed
 
 ### 10. AnalysisResult field correctness (WARN on failure)
 
-- `AnalysisResult` must contain exactly: `category`, `shortDescription`, `elements`, `confidence`, `extractedText`
+- `AnalysisResult` must contain exactly: `category`, `shortDescription`, `fullDescription`, `elements`, `confidence`, `extractedText`
 - Must NOT contain removed fields: `condition`, `defects`, `severity`, `locationWithinCategory`
 - If `AnalysisResult` changed, verify all test fixtures were updated
 

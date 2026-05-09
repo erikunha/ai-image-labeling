@@ -31,10 +31,12 @@ Read `src/analyzer/index.ts` → `reclassifyUnknowns()`. Verify:
 
 If the reclassify pass is missing or broken, show the fix.
 
+Note: This is the automatic third pass. It is separate from the optional `--self-critique` fourth pass in `src/analyzer/critique.ts`.
+
 ## Step 4 — Check temporal consensus
 
 Read `src/analyzer/temporal.ts` → `applyTemporalConsensus()`. Verify:
-- Window (`config.temporalWindowMinutes`, default 15) is appropriate for the dataset
+- Window (`config.temporalWindowMinutes`, default 5) is appropriate for the dataset
   (e.g. e-commerce shots seconds apart may need `--temporal-window 1`)
 - Threshold (`config.consensusThreshold`, default 0.6) isn't too high for small clusters
 - `"unknown"` is in `config.categoryConfig.overridable`
@@ -51,7 +53,7 @@ Produce an exact command using:
 
 Example:
 ```bash
-node dist/cli/index.js batch \
+node dist/cli/index.js \
   --input ./photos \
   --output ./out \
   --categories ./categories.json \

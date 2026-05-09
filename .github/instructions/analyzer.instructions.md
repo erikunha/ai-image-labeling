@@ -14,7 +14,7 @@ interface from `client.ts`; it never imports any LLM SDK directly.
 
 ## LLM client architecture
 
-- `src/analyzer/client.ts` is the **only** file that imports OpenAI SDK, `@anthropic-ai/sdk`, or `@google/generative-ai`
+- `src/analyzer/providers/*.ts` are the **only** files that import LLM SDKs. Each file imports one SDK. `src/analyzer/client.ts` is a thin routing layer that imports from `./providers/` — it does NOT import any LLM SDK directly.
 - All other files in this module receive an `LLMClient` instance as a parameter
 - `LLMClient` interface: `complete(prompt: string, images: ImageInput[], opts: CompleteOptions): Promise<CompleteResult>`
 - `ImageInput = { base64: string, label: string }`
@@ -40,7 +40,7 @@ interface from `client.ts`; it never imports any LLM SDK directly.
 
 ## Temporal consensus (`temporal.ts`)
 
-- Cluster window: `config.temporalWindowMinutes` (default 15, CLI: `--temporal-window`)
+- Cluster window: `config.temporalWindowMinutes` (default 5, CLI: `--temporal-window`)
 - Override threshold: `config.consensusThreshold` (default 0.6, CLI: `--consensus-threshold`)
 - `immune` categories (e.g. `payment_receipt`) are NEVER overridden
 - `overridable` categories (e.g. `unknown`) CAN be overridden
@@ -53,6 +53,7 @@ Fields returned by the LLM and stored in the cache:
 interface AnalysisResult {
   category: string; // matched category name or 'unknown'
   shortDescription: string; // 1–2 sentence description of the image
+  fullDescription: string; // detailed description, max 250 chars; '' when not provided
   elements: string[]; // key visual elements (objects, features)
   confidence: number; // 0–1 self-reported model confidence (0 = unknown/unparsed)
   extractedText: string | null; // visible text in the image (OCR); null if none
@@ -62,7 +63,7 @@ interface AnalysisResult {
 Sentinel defaults for unknown/failed images:
 
 ```typescript
-{ category: 'unknown', shortDescription: 'unanalyzed image', elements: [], confidence: 0, extractedText: null }
+{ category: 'unknown', shortDescription: 'unanalyzed image', fullDescription: '', elements: [], confidence: 0, extractedText: null }
 ```
 
 `CACHE_SCHEMA_VERSION = 4` — increment in `src/types.ts` whenever `AnalysisCache` fields change.

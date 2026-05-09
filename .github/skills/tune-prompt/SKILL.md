@@ -23,7 +23,7 @@ Note the exact JSON response schema the prompts require:
 ```json
 {
   "images": [
-    { "index": N, "category": "...", "shortDescription": "...", "elements": [...], "confidence": 0.9, "extractedText": null }
+    { "index": N, "category": "...", "shortDescription": "...", "fullDescription": "...", "elements": [...], "confidence": 0.9, "extractedText": null }
   ]
 }
 ```
@@ -99,5 +99,5 @@ also update `batch.test.ts` accordingly.
 
 - Unknown rate drops below 10% on the target dataset
 - No regressions in the categories that were already working
-- `npm test` passes
+- `pnpm test` passes
 - Contract tests pass with `CI_CONTRACT=1`

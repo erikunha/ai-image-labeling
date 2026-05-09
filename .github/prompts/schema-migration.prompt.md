@@ -58,8 +58,8 @@ Common locations:
 
 Run:
 ```bash
-npm run typecheck
-npm test
+pnpm run typecheck
+pnpm test
 ```
 
 Both must pass with zero errors before the migration is complete.

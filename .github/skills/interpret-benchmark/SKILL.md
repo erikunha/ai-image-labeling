@@ -2,7 +2,7 @@
 
 ## When to use this skill
 
-Use after running `npm run benchmark` (or `npx tsx scripts/benchmark.ts`) to understand
+Use after running `pnpm run benchmark` (or `npx tsx scripts/benchmark.ts`) to understand
 what the numbers mean, whether quality has improved or regressed, and what action to take next.
 
 ---

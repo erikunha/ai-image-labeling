@@ -49,7 +49,7 @@ Note: `--dry-run` intentionally skips reclassification — test without it to se
 
 Read `src/analyzer/temporal.ts` → `applyTemporalConsensus()`.
 Verify:
-- The window (`config.temporalWindowMinutes`, default 15) is appropriate for the input dataset
+- The window (`config.temporalWindowMinutes`, default 5) is appropriate for the input dataset
   (e.g. e-commerce shots taken seconds apart need `--temporal-window 1`)
 - The threshold (`config.consensusThreshold`, default 0.6) is not too high for small clusters
 - `unknown` is in `config.categoryConfig.overridable` — if not, temporal consensus cannot fix it

@@ -49,7 +49,7 @@ increment `CACHE_SCHEMA_VERSION` in `src/types.ts` and add a migration step in `
 Show the user the diff and remind them:
 
 - The GPT prompt is built dynamically — no code changes needed
-- Re-run `npm test` to ensure nothing broke
+- Re-run `pnpm test` to ensure nothing broke
 - The new category will take effect on the next `ai-image-labeling` run
 
 ## Example output (categories.json diff)

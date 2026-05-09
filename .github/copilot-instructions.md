@@ -19,7 +19,7 @@ selected at runtime.
 ## Architecture rules
 
 - **`src/utils/`** — Pure helpers with no side effects. Fully unit-testable without mocks.
-- **`src/analyzer/client.ts`** — Single adapter for all LLM providers. The ONLY file that imports any LLM SDK. All other modules go through `LLMClient`.
+- **`src/analyzer/providers/*.ts`** — One file per provider. The ONLY files that import LLM SDKs. `src/analyzer/client.ts` is the routing layer — it imports from `./providers/` and exposes the `LLMClient` interface.
 - **`src/analyzer/`** — All LLM calls live here via `LLMClient`. Must be mockable in tests. May import Sharp only in `batch.ts` (resize helper) and `dedup.ts` (perceptual hash).
 - **`src/processor/`** — All Sharp image processing lives here. Never import any LLM SDK.
 - **`src/classifier/`** — Pure functions: grouping, sorting, rule evaluation. Zero I/O.
@@ -36,8 +36,9 @@ selected at runtime.
 | Module                   | Allowed imports                                        | Forbidden imports                                           |
 | ------------------------ | ------------------------------------------------------ | ----------------------------------------------------------- |
 | `src/utils/`             | Node stdlib only                                       | OpenAI, Sharp, fs-extra                                     |
-| `src/analyzer/client.ts` | utils/, config/, types, all LLM SDKs                   | processor/, classifier/                                     |
-| `src/analyzer/`          | utils/, config/, types, LLMClient, Sharp (resize only) | processor/, classifier/, any LLM SDK directly               |
+| `src/analyzer/client.ts`       | utils/, config/, types, src/analyzer/providers/*       | processor/, classifier/, any LLM SDK directly               |
+| `src/analyzer/providers/*.ts`  | single provider SDK, utils/, config/, types            | other SDKs, processor/, classifier/                         |
+| `src/analyzer/`                | utils/, config/, types, LLMClient, Sharp (resize only) | processor/, classifier/, any LLM SDK directly               |
 | `src/processor/`         | utils/, config/, types, Sharp                          | any LLM SDK, analyzer/                                      |
 | `src/classifier/`        | config/, types                                         | any LLM SDK, Sharp, fs-extra                                |
 | `src/plugin/`            | utils/, types                                          | any LLM SDK, Sharp, fs-extra, src/analyzer/, src/processor/ |
@@ -67,6 +68,8 @@ selected at runtime.
   - `google` (default: `gemini-2.0-flash`) — requires `GOOGLE_API_KEY`
   - `azure` (default: model from `--azure-deployment`) — requires `AZURE_API_KEY` + `--azure-endpoint`
   - `ollama` (default: `llama3.2-vision`) — no key required; requires `--ollama-url` (default: `http://localhost:11434`)
+  - `bedrock` (Claude via AWS IAM) — requires `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `--bedrock-region`
+  - `vertex` (Gemini via GCP ADC) — requires `--vertex-project`, `--vertex-location`
 
 ## Plugin API
 
@@ -84,8 +87,8 @@ selected at runtime.
 - Pure functions (classifier, overlay math, CSV builder) should be tested without mocks
 - Do not test `src/cli/` or `src/index.ts` (excluded from coverage)
 - Config test fixtures must include ALL required `Config` fields — never use `as Config` to suppress errors
-- Required fields commonly missed: `concurrency: 1`, `estimate: false`, `temporalWindowMinutes: 15`, `consensusThreshold: 0.6`, `dedupeThreshold: 0`, `interactive: false`, `plugins: []`, `asyncBatch: false`, `resumeBatch: false`, `forceSkipAnalysis: false`
-- `AnalysisResult` fixtures must include `confidence: 0` and `extractedText: null` — do NOT include `condition` (removed as domain-specific)
+- Required fields commonly missed: `concurrency: 1`, `estimate: false`, `temporalWindowMinutes: 5`, `consensusThreshold: 0.6`, `dedupeThreshold: 0`, `interactive: false`, `plugins: []`, `asyncBatch: false`, `resumeBatch: false`, `forceSkipAnalysis: false`, `activeLearnQueue: false`, `embed: false`, `sessionGapMinutes: undefined`, `consensusProviders: undefined`, `serveLogRequests: false`
+- `AnalysisResult` fixtures must include `fullDescription: ''`, `confidence: 0`, and `extractedText: null` — do NOT include `condition` (removed as domain-specific)
 - Coverage thresholds: lines 75%, functions 85%, branches 75%
 
 ## Category system
@@ -121,13 +124,20 @@ Invoke the right specialist agent for each task:
 | `Test Author`            | When coverage drops below thresholds; after a new module                        |
 | `Data Integrity Auditor` | When touching cache serialisation or partial-flush path                         |
 | `Analyzer Tuner`         | High unknown rate, poor accuracy, high API cost                                 |
-| `Performance Profiler`   | Before implementing Phases 3.3 or 3.4                                           |
+| `Performance Profiler`   | Sharp pipeline or batch API throughput bottlenecks; profile with clinic.js before implementing H15 worker thread pool |
 | `Plugin Author`          | When writing an external `.mjs` plugin                                          |
 | `Incident Responder`     | Corrupt cache, partial run, wrong sequence numbers                              |
 | `Category Architect`     | New image domain onboarding                                                     |
 | `Docs Writer`            | After CLI changes or new features                                               |
 | `Release Engineer`       | Cutting a release                                                               |
 | `Explore`                | Fast read-only codebase Q&A                                                     |
+
+## Subcommands
+
+Key subcommands to know:
+- `search` — semantic or keyword search on classified images; requires `--embed` for semantic mode
+- `diff <before> <after>` — compare two `analysis_results.json` files
+- `suggest-categories` — sample images and ask LLM to propose a `categories.json` taxonomy
 
 ## Commit conventions
 

@@ -44,7 +44,7 @@ abstraction and interprets results.
 | -------------------------- | ----------------------------------------------------------- |
 | `src/analyzer/batch.ts`    | `buildBatchPrompt()` — the main classification prompt       |
 | `src/analyzer/index.ts`    | `RECLASSIFY_PROMPT` — the second-pass prompt                |
-| `src/analyzer/temporal.ts` | Temporal consensus algorithm (15-min window, 60% threshold) |
+| `src/analyzer/temporal.ts` | Temporal consensus algorithm (5-min window, 60% threshold) |
 | `src/analyzer/client.ts`   | `LLMClient` factory — provider-specific behaviour           |
 | `src/utils/cost.ts`        | Token pricing per provider (if implemented)                 |
 | `src/types.ts`             | `AnalysisResult` shape — changing this cascades to tests    |
@@ -99,7 +99,7 @@ node dist/cli/index.js --input ./input --output ./output --dry-run --verbose --p
 
 The consensus algorithm in `src/analyzer/temporal.ts` uses:
 
-- Window: 15 minutes (images within this window form a cluster)
+- Window: 5 minutes (images within this window form a cluster)
 - Threshold: 60% majority vote overrides individual classification for `overridable` categories
 
 If you need to tune these, they are configurable via `--temporal-window` and

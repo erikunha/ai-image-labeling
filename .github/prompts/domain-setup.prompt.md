@@ -74,5 +74,5 @@ parsed.categories.forEach(c => console.log(' -', c.name));
 Provide realistic expectations for first-run accuracy given the domain complexity:
 
 - Simple domains (clear visual differences, < 6 categories): expect 85–95% precision
-- Complex domains (subtle differences, > 8 categories): expect 70–85% precision; recommend running `npm run benchmark`
+- Complex domains (subtle differences, > 8 categories): expect 70–85% precision; recommend running `pnpm run benchmark`
 - Recommend: run with 50 representative images first, review with `--interactive`, then tune prompts

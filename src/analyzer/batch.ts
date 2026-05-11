@@ -128,7 +128,13 @@ export async function analyzeBatch(
   onBatchComplete?: (processedCount: number, results: AnalysisResult[]) => Promise<void>,
   feedbackNote = '',
 ): Promise<AnalysisResult[]> {
-  const { batchSize, maxRetries, retryDelayMs, delayBetweenCallsMs, concurrency } = config;
+  const {
+    batchSize,
+    maxRetries: maxAttempts,
+    retryDelayMs,
+    delayBetweenCallsMs,
+    concurrency,
+  } = config;
   const totalBatches = Math.ceil(filesWithStats.length / batchSize);
   const systemPrompt = buildSystemPrompt(config, feedbackNote);
 
@@ -184,7 +190,7 @@ export async function analyzeBatch(
               detail: 'low',
               systemPrompt,
             }),
-          { maxRetries, delayMs: retryDelayMs, label: `batch ${batchNumber}` },
+          { maxAttempts, delayMs: retryDelayMs, label: `batch ${batchNumber}` },
         );
 
         tokensUsed = result.tokensUsed;

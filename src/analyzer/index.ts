@@ -71,7 +71,7 @@ async function reclassifyUnknowns(
             { maxTokens: 500, detail: 'high' },
           ),
         {
-          maxRetries: config.maxRetries,
+          maxAttempts: config.maxRetries,
           delayMs: config.retryDelayMs,
           label: `reclassify:${img.file}`,
         },

@@ -3,7 +3,7 @@
 > **Last updated:** May 2026  
 > **Status key:** 🟢 Shipped · 🔵 Planned · ⏸ Deferred · ❌ Removed
 >
-> **v2.0 is feature-complete.** Horizons 1–8 are fully shipped. H9–H12 form the next strategic layer: semantic retrieval (H9), enterprise-grade REST server (H10), workflow intelligence (H11), and ML pipeline integration (H12). The north-star is evolving from "AI image labeling" into "semantic operational visual intelligence infrastructure."
+> **v2.0 is feature-complete.** Horizons 1–8 are fully shipped. H9–H11 form the next strategic layer: semantic retrieval (H9), workflow intelligence (H11), and ML pipeline integration (H12). The north-star is evolving from "AI image labeling" into "semantic operational visual intelligence infrastructure."
 
 ---
 
@@ -299,7 +299,6 @@ If profiling shows the Sharp overlay pass is measurably blocking the event loop,
 
 | Item | Description | Status |
 |---|---|---|
-| H8.1 REST API server mode (`--serve`) | HTTP server accepting image uploads, returning classification JSON. | 🟢 |
 | H8.2 Cloud storage output targets | `--output-bucket s3://...` / `gs://...` / `azure-blob://...`. `FileRepository` adapters in `src/fs/{s3,gcs,azure-blob}-adapter.ts`. `createFileRepository` factory routes by URI prefix. | 🟢 |
 | H8.3 Webhook on run complete | `--webhook <url>`: POST `analysis_results.json` when a run finishes. `src/utils/webhook.ts` — failure-tolerant, never aborts the run. | 🟢 |
 | H8.4 Bedrock / Vertex AI providers | AWS Bedrock (Claude via IAM) in `src/analyzer/providers/bedrock.ts`. Google Vertex AI (ADC) in `src/analyzer/providers/vertex.ts`. Priced in `src/utils/cost.ts`. | 🟢 |
@@ -319,7 +318,6 @@ If profiling shows the Sharp overlay pass is measurably blocking the event loop,
 | H9.2 Lightweight vector index | `src/search/index.ts` builds and persists a cosine-similarity index from stored embeddings. Pure TypeScript — no new runtime dependency. Stored as `analysis_embeddings.index.json` (flat array of `{ number, file, vector }`) alongside the cache. Rebuilt after each `--embed` run. | 🟢 |
 | H9.3 `search` subcommand | `ai-image-labeling search --query "kitchen with natural lighting" --top 10` — embeds the query text, ranks results by cosine similarity, prints a table with rank / file / category / score / description. `--output-format json` emits machine-readable ranked results. `--min-score <0–1>` filters low-confidence matches. | 🟢 |
 | H9.4 Keyword fallback search | `ai-image-labeling search --keyword "crack"` — full-text scan over `shortDescription`, `elements`, and `extractedText` fields in `analysis_results.json`. No embedding required. Works on any existing cache without `--embed`. Ranked by field-match count. | 🟢 |
-| H9.5 `GET /search` REST endpoint | `GET /search?q=<query>&top=10&min_score=0.5` on the `serve` server. Uses the vector index if it exists; falls back to keyword scan. Returns ranked `{ results, mode }` where mode is `'semantic'` or `'keyword'`. | 🟢 |
 
 ---
 
@@ -354,21 +352,6 @@ Index format (`analysis_results.index.json`):
 ```
 
 Atomic write (tmp+rename). Rebuilt when `analysis_results.json` is newer than the index. `src/search/` module — no LLM SDK imports, no Sharp.
-
----
-
-## Horizon 10 — API Security & Observability (v2.2)
-
-> **Goal:** Make the REST server enterprise-ready. Bearer token auth, rate limiting, structured request logging, and an OpenAPI spec close the gap between a personal dev server and a deployable service. These are table-stakes requirements for any enterprise integration.
->
-> **Status: 🟢 Complete.** All 4 items shipped.
-
-| Item | Description | Status |
-|---|---|---|
-| H10.1 Bearer token auth | `--serve-api-key <token>` (or `SERVER_API_KEY` env var): all non-health routes require `Authorization: Bearer <token>`. Returns `401` with a `WWW-Authenticate: Bearer` header on missing/invalid tokens. Health endpoint always unauthenticated. | 🟢 |
-| H10.2 Per-IP rate limiting | `--serve-rate-limit <rpm>` (requests per minute per IP, default: unlimited). Sliding-window counter in memory. Returns `429 Too Many Requests` with `Retry-After` header. `src/server/rate-limiter.ts` — pure, no external dependency. | 🟢 |
-| H10.3 Structured access logs | `--serve-log-requests`: logs each request as JSON `{ method, path, status, durationMs, ip, timestamp }` to stdout (respects `--log-format json`). | 🟢 |
-| H10.4 OpenAPI 3.1 spec | `GET /openapi.json` on the running server — auto-generated from route definitions. Includes request/response schemas, auth requirement, and example payloads. Enables `curl /openapi.json | swagger-ui-watcher -` for interactive exploration without a separate doc site. | 🟢 |
 
 ---
 
@@ -561,7 +544,18 @@ HNSW (Malkov and Yashunin, 2018) is the dominant ANN algorithm in production vec
 
 ---
 
-tchen,bathroom` / `--exclude-categories unknown` — skip analysis or output for images outside the filter. Useful for partial re-runs, cost reduction on targeted categories, and building category-specific training sets. | 🔵 |
+## Horizon 16 — Engineering Integrity (v2.8)
+
+> **Goal:** Close the architectural and correctness gaps identified in the May 2026 Principal/Staff Engineer audit. No new user-visible features — only correctness, robustness, and architecture completion.
+
+| Item | Description | Status |
+|---|---|---|
+| H16.1 `PartialAnalysisCache` readonly fields | All fields on `PartialAnalysisCache` are currently mutable. Accidental mutation mid-run produces silent corrupted crash-recovery checkpoints. Add `readonly` to all fields to match `AnalysisCache`. | 🔵 |
+| H16.2 `withRetry` semantics fix | `RetryOptions.maxRetries` actually controls total attempt count, not retry count. `maxRetries: 3` = 3 total attempts (2 retries). Rename to `maxAttempts` across `src/utils/retry.ts` and all call sites for accurate semantics. | 🔵 |
+| H16.3 `better-sqlite3` dependency classification | `better-sqlite3` is in `devDependencies` but is a runtime optional dep used by `src/reporter/sqlite.ts`. Moving to `optionalDependencies` ensures `pnpm install --prod` installs it when requested. | 🔵 |
+| H16.4 FileRepository completion | `src/index.ts` imports `fs-extra` directly, bypassing the `FileRepository` port. Route `runBatch`, `runReorder`, `runSingle`, `runWatch` through `FileRepository`. Unlocks the S3/GCS/Azure adapters for the primary run path. | ✅ |
+| H16.5 Embedding index schema versioning | Companion to H13.1 P0 bug: add `embeddingModel: string` and `dimensions: number` to `IndexFile` metadata. On load, validate against current provider — mismatch rejects the index and prompts re-embed. Bump `INDEX_SCHEMA_VERSION` to 2. | 🔵 |
+| H16.6 Documentation: `src/fs/` and `sdk.ts` | Neither `src/fs/` (FileRepository port + 5 adapters) nor `src/sdk.ts` (stable public API surface) appear in CLAUDE.md or AGENTS.md boundary tables. Add both. Document which exports are semver-stable vs internal. | 🔵 |
 
 ---
 
@@ -570,6 +564,7 @@ tchen,bathroom` / `--exclude-categories unknown` — skip analysis or output for
 | Item | Reason |
 |---|---|
 | GUI / web interface | Not the audience. CLI + HTML report covers it. |
+| HTTP server / REST API | Removed in H16 cycle. A CLI tool that runs as a batch process has no need for a persistent HTTP server. |
 | Multi-user / SaaS | Different product. |
 | Video / audio analysis | Out of scope. Separate tool. |
 | Domain-specific output fields | The category taxonomy in `categories.json` is the extension point. |

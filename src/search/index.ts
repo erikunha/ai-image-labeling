@@ -21,10 +21,14 @@ export interface RankedResult {
 interface IndexFile {
   schemaVersion: number;
   generatedAt: string;
+  /** Embedding model used to generate vectors — required to detect provider switches. */
+  embeddingModel: string;
+  /** Vector dimensions — required to detect model/provider switches. */
+  dimensions: number;
   entries: EmbeddingEntry[];
 }
 
-const INDEX_SCHEMA_VERSION = 1;
+const INDEX_SCHEMA_VERSION = 2;
 const INDEX_FILE_NAME = 'analysis_embeddings.index.json';
 
 /**
@@ -79,11 +83,19 @@ export function rankResults(
 /**
  * Persist an array of EmbeddingEntry objects to an index file.
  * Write is atomic: writes to a `.tmp` file then renames.
+ * Stores embeddingModel and dimensions so loadIndex can detect provider switches.
  */
-export async function buildIndex(entries: EmbeddingEntry[], indexPath: string): Promise<void> {
+export async function buildIndex(
+  entries: EmbeddingEntry[],
+  indexPath: string,
+  embeddingModel: string,
+  dimensions: number,
+): Promise<void> {
   const indexData: IndexFile = {
     schemaVersion: INDEX_SCHEMA_VERSION,
     generatedAt: new Date().toISOString(),
+    embeddingModel,
+    dimensions,
     entries,
   };
   const json = JSON.stringify(indexData, null, 2) + '\n';
@@ -94,9 +106,15 @@ export async function buildIndex(entries: EmbeddingEntry[], indexPath: string): 
 
 /**
  * Load the embedding index from disk.
- * Returns null if the file does not exist or has an unrecognised schema version.
+ * Returns null if the file does not exist, has an unrecognised schema version,
+ * or if the stored model/dimensions don't match the expected values.
+ * A null return means the caller must re-generate embeddings before searching.
  */
-export async function loadIndex(indexPath: string): Promise<EmbeddingEntry[] | null> {
+export async function loadIndex(
+  indexPath: string,
+  expectedModel?: string,
+  expectedDimensions?: number,
+): Promise<EmbeddingEntry[] | null> {
   let raw: string;
   try {
     raw = await readFile(indexPath, 'utf-8');
@@ -113,6 +131,14 @@ export async function loadIndex(indexPath: string): Promise<EmbeddingEntry[] | n
 
   const data = parsed as Partial<IndexFile>;
   if (data.schemaVersion !== INDEX_SCHEMA_VERSION || !Array.isArray(data.entries)) {
+    return null;
+  }
+
+  if (expectedModel !== undefined && data.embeddingModel !== expectedModel) {
+    return null;
+  }
+
+  if (expectedDimensions !== undefined && data.dimensions !== expectedDimensions) {
     return null;
   }
 

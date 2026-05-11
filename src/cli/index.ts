@@ -7,12 +7,10 @@ import {
   runReorder,
   runReport,
   runSearch,
-  runServe,
   runSingle,
   runSuggestCategories,
   runWatch,
 } from '../index.js';
-import { DEFAULT_SERVER_PORT } from '../server/index.js';
 import { configureLogger, logger } from '../utils/logger.js';
 import { printHelp } from './help.js';
 
@@ -382,79 +380,6 @@ program
       const outPath = opts['out'] as string;
       const sampleSize = Math.max(1, parseInt(opts['sample'] as string, 10) || 20);
       await runSuggestCategories(config, outPath, sampleSize);
-    } catch (error) {
-      logger.error(String((error as Error).message));
-      process.exit(1);
-    }
-  });
-
-// Serve subcommand
-program
-  .command('serve')
-  .description('Start an HTTP classification server (POST /classify, GET /health)')
-  .option('--port <n>', 'Port to listen on', String(DEFAULT_SERVER_PORT))
-  .option(
-    '--provider <name>',
-    'LLM provider: openai | anthropic | google | azure | ollama | bedrock | vertex',
-    'openai',
-  )
-  .option('--api-key <key>', 'OpenAI API key (overrides OPENAI_API_KEY env var)')
-  .option('--anthropic-api-key <key>', 'Anthropic API key (overrides ANTHROPIC_API_KEY env var)')
-  .option('--google-api-key <key>', 'Google AI API key (overrides GOOGLE_API_KEY env var)')
-  .option('--azure-endpoint <url>', 'Azure OpenAI endpoint URL (requires --provider azure)')
-  .option('--azure-api-key <key>', 'Azure OpenAI API key (overrides AZURE_OPENAI_API_KEY env var)')
-  .option('--ollama-url <url>', 'Ollama server URL (requires --provider ollama)')
-  .option('--model <model>', 'Model name (defaults: gpt-4o / claude-opus-4-7 / gemini-2.0-flash)')
-  .option('--categories <file>', 'Path to categories.json')
-  .option('--batch-size <n>', 'Images per LLM call', '5')
-  .option('--max-retries <n>', 'Max retries on API errors', '3')
-  .option('--serve-api-key <token>', 'Bearer token for API auth (or SERVER_API_KEY env var)')
-  .option('--serve-rate-limit <rpm>', 'Max requests per minute per IP (default: unlimited)')
-  .option('--serve-log-requests', 'Log each HTTP request as a structured line to stdout', false)
-  .option('-v, --verbose', 'Show detailed debug logs', false)
-  .option('-q, --quiet', 'Suppress non-error output', false)
-  .action(async (opts: Record<string, string | boolean>) => {
-    configureLogger({ verbose: Boolean(opts['verbose']), quiet: Boolean(opts['quiet']) });
-    try {
-      const rateLimitRaw = opts['serveRateLimit'] as string | undefined;
-      const serveRateLimit = rateLimitRaw ? parseInt(rateLimitRaw, 10) : undefined;
-      if (
-        serveRateLimit !== undefined &&
-        (!Number.isInteger(serveRateLimit) || serveRateLimit < 1)
-      ) {
-        throw new Error(
-          `[error] --serve-rate-limit must be a positive integer (got: ${rateLimitRaw})`,
-        );
-      }
-      const config = await loadConfig({
-        inputDir: './input',
-        outputDir: './output',
-        provider: opts['provider'] as string | undefined,
-        apiKey: opts['apiKey'] as string | undefined,
-        anthropicApiKey: opts['anthropicApiKey'] as string | undefined,
-        googleApiKey: opts['googleApiKey'] as string | undefined,
-        azureEndpoint: opts['azureEndpoint'] as string | undefined,
-        azureApiKey: opts['azureApiKey'] as string | undefined,
-        ollamaUrl: opts['ollamaUrl'] as string | undefined,
-        model: opts['model'] as string | undefined,
-        categoriesFile: opts['categories'] as string | undefined,
-        batchSize: parseInt(opts['batchSize'] as string, 10),
-        maxRetries: parseInt(opts['maxRetries'] as string, 10),
-        dryRun: false,
-        skipAnalysis: false,
-        outputFormat: 'none',
-        logFormat: 'pretty',
-        verbose: Boolean(opts['verbose']),
-        quiet: Boolean(opts['quiet']),
-        serveApiKey: opts['serveApiKey'] as string | undefined,
-        serveRateLimit,
-        serveLogRequests: Boolean(opts['serveLogRequests']),
-      });
-      const port = parseInt(opts['port'] as string, 10);
-      if (!Number.isInteger(port) || port < 1 || port > 65535) {
-        throw new Error(`[error] --port must be an integer 1–65535 (got: ${opts['port']})`);
-      }
-      await runServe(config, port);
     } catch (error) {
       logger.error(String((error as Error).message));
       process.exit(1);

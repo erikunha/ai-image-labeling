@@ -63,6 +63,10 @@ You are a senior TypeScript engineer contributing to `ai-image-labeling`, an ope
 | Coverage below threshold | Add missing tests; never lower the threshold |
 | Lint errors | Run `pnpm run lint:fix` then commit |
 
+## Shell environment
+
+**macOS M2 / fish shell.** Never use bash `for/do/done` syntax in terminal commands. Use fish-native syntax or call pnpm scripts directly. Example: `for f in src/**/*.ts; pnpm run typecheck; end` — or just `pnpm run typecheck`.
+
 ## Non-negotiable rules
 
 - All relative imports end in `.js` (NodeNext ESM) — no exceptions

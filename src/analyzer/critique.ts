@@ -51,7 +51,7 @@ function buildCritiquePrompt(images: readonly AnalyzedImage[]): string {
 export async function runSelfCritique(
   analyzedImages: AnalyzedImage[],
   client: LLMClient,
-  maxRetries: number,
+  maxAttempts: number,
   retryDelayMs: number,
 ): Promise<AnalyzedImage[]> {
   if (analyzedImages.length === 0) return analyzedImages;
@@ -63,7 +63,7 @@ export async function runSelfCritique(
 
   try {
     const result = await withRetry(() => client.complete(prompt, [], { maxTokens: 2000 }), {
-      maxRetries,
+      maxAttempts,
       delayMs: retryDelayMs,
       label: 'self-critique',
     });
@@ -108,7 +108,7 @@ export async function runSelfCritique(
     try {
       const result = await withRetry(
         () => client.complete(reclassifyPrompt, [], { maxTokens: 500 }),
-        { maxRetries, delayMs: retryDelayMs, label: `critique-reclassify:${img.file}` },
+        { maxAttempts, delayMs: retryDelayMs, label: `critique-reclassify:${img.file}` },
       );
       const parsed = RECLASSIFY_SCHEMA.safeParse(JSON.parse(result.text));
       if (!parsed.success) continue;

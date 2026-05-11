@@ -28,7 +28,6 @@ export {
   runDiff,
   runReport,
   runReorder,
-  runServe,
   runSingle,
   runSuggestCategories,
   runWatch,
@@ -39,12 +38,6 @@ export { buildSessions } from './analyzer/sessions.js';
 export type { SessionBuildResult } from './analyzer/sessions.js';
 export { runConsensus } from './analyzer/consensus.js';
 export type { ConsensusResult } from './analyzer/consensus.js';
-export {
-  createDefaultClassifier,
-  createRequestHandler,
-  DEFAULT_SERVER_PORT,
-} from './server/index.js';
-export type { ClassifyFn, ClassifyResult } from './server/index.js';
 export type { FileRepository } from './fs/index.js';
 export {
   NodeFileRepository,

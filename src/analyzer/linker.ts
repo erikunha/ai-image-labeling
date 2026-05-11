@@ -45,7 +45,7 @@ export async function linkImages(
   images: readonly ProcessedResult[],
   client: LLMClient,
   windowDays: number,
-  maxRetries: number,
+  maxAttempts: number,
   retryDelayMs: number,
 ): Promise<Map<number, ImageLink[]>> {
   const relationsMap = new Map<number, ImageLink[]>();
@@ -82,7 +82,7 @@ export async function linkImages(
       const prompt = buildLinkPrompt(category, window, windowDays);
       try {
         const result = await withRetry(() => client.complete(prompt, [], { maxTokens: 1000 }), {
-          maxRetries,
+          maxAttempts,
           delayMs: retryDelayMs,
           label: `link:${category}`,
         });

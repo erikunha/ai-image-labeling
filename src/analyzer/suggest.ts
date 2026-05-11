@@ -105,7 +105,7 @@ export async function suggestCategories(
         detail: 'low',
         systemPrompt: SUGGEST_SYSTEM_PROMPT,
       }),
-    { maxRetries: config.maxRetries, delayMs: config.retryDelayMs, label: 'suggest-categories' },
+    { maxAttempts: config.maxRetries, delayMs: config.retryDelayMs, label: 'suggest-categories' },
   );
 
   let parsed: unknown;

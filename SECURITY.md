@@ -30,24 +30,14 @@ Store all keys in `.env` only (already in `.gitignore`). Never commit keys to so
 
 ## Scope
 
-This tool primarily processes images from a local directory. It also includes a `serve` subcommand that intentionally starts an HTTP server — users must opt in explicitly by running `ai-image-labeling serve`.
+This tool processes images from a local directory and sends them to LLM Vision APIs. It does not start any server.
 
 External inputs accepted:
 
 1. Local image files from the `--input` directory.
 2. LLM responses from the configured provider.
-3. HTTP requests to the REST server (when `serve` is running).
-4. Webhook response bodies (if `--webhook` is configured).
-5. Plugin `.mjs` files loaded via `--plugin`.
-
-### REST server security (`serve` subcommand)
-
-The server binds to `localhost:3000` by default and is not exposed to the network. If you need to expose it:
-
-- Always put a TLS-terminating reverse proxy (nginx, Caddy) in front — the server itself speaks plain HTTP.
-- Always set `--serve-api-key <token>` to require a `Bearer` token on every request. Requests without a valid token receive HTTP 401.
-- Set `--serve-rate-limit <rpm>` to limit requests per minute per IP and reduce the blast radius of a misconfigured firewall rule.
-- Do not run the server as root.
+3. Webhook response bodies (if `--webhook` is configured).
+4. Plugin `.mjs` files loaded via `--plugin`.
 
 ### LLM response sanitisation
 

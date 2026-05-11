@@ -1,15 +1,15 @@
 import { logger } from './logger.js';
 
 export interface RetryOptions {
-  readonly maxRetries: number;
+  readonly maxAttempts: number;
   readonly delayMs: number;
   readonly label?: string;
 }
 
 export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions): Promise<T> {
-  const { maxRetries, delayMs, label = 'operation' } = options;
+  const { maxAttempts, delayMs, label = 'operation' } = options;
 
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       return await fn();
     } catch (error) {
@@ -35,18 +35,18 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions):
       }
 
       const is429 = err.status === 429 || err.message?.includes('429');
-      if (is429 && attempt < maxRetries) {
+      if (is429 && attempt < maxAttempts) {
         logger.warn(
-          `  Rate limit on ${label}. Waiting ${delayMs / 1000}s (retry ${attempt}/${maxRetries})...`,
+          `  Rate limit on ${label}. Waiting ${delayMs / 1000}s (retry ${attempt}/${maxAttempts})...`,
         );
         await sleep(delayMs);
         continue;
       }
 
-      if (attempt < maxRetries) {
+      if (attempt < maxAttempts) {
         const backoff = delayMs * attempt;
         logger.warn(
-          `  ${label} failed (attempt ${attempt}/${maxRetries}). Retrying in ${backoff / 1000}s...`,
+          `  ${label} failed (attempt ${attempt}/${maxAttempts}). Retrying in ${backoff / 1000}s...`,
         );
         await sleep(backoff);
         continue;
@@ -56,7 +56,7 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions):
     }
   }
 
-  throw new Error(`${label} failed after ${maxRetries} attempts`);
+  throw new Error(`${label} failed after ${maxAttempts} attempts`);
 }
 
 export const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));

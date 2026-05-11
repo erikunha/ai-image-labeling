@@ -145,18 +145,25 @@ describe('buildIndex', () => {
       { number: 1, file: 'img1.jpg', vector: [0.1, 0.2] },
       { number: 2, file: 'img2.jpg', vector: [0.3, 0.4] },
     ];
-    await buildIndex(entries, '/output/test.index.json');
+    await buildIndex(entries, '/output/test.index.json', 'text-embedding-3-small', 2);
     // After buildIndex the final path should exist
     const stored = writtenFiles.get('/output/test.index.json');
     expect(stored).toBeDefined();
-    const parsed = JSON.parse(stored!) as { schemaVersion: number; entries: EmbeddingEntry[] };
-    expect(parsed.schemaVersion).toBe(1);
+    const parsed = JSON.parse(stored!) as {
+      schemaVersion: number;
+      embeddingModel: string;
+      dimensions: number;
+      entries: EmbeddingEntry[];
+    };
+    expect(parsed.schemaVersion).toBe(2);
+    expect(parsed.embeddingModel).toBe('text-embedding-3-small');
+    expect(parsed.dimensions).toBe(2);
     expect(parsed.entries).toHaveLength(2);
   });
 
   it('rename is called (atomic write)', async () => {
     const entries: EmbeddingEntry[] = [{ number: 1, file: 'img1.jpg', vector: [1] }];
-    await buildIndex(entries, '/output/atomic.index.json');
+    await buildIndex(entries, '/output/atomic.index.json', 'text-embedding-3-small', 1);
     // rename should have been called from the .tmp path
     const renamed = renamedFiles.get('/output/atomic.index.json.tmp');
     expect(renamed).toBe('/output/atomic.index.json');
@@ -166,7 +173,7 @@ describe('buildIndex', () => {
 describe('loadIndex', () => {
   it('returns entries from a valid index file', async () => {
     const entries: EmbeddingEntry[] = [{ number: 5, file: 'photo5.jpg', vector: [0.5] }];
-    await buildIndex(entries, '/output/load.index.json');
+    await buildIndex(entries, '/output/load.index.json', 'text-embedding-3-small', 1);
     const loaded = await loadIndex('/output/load.index.json');
     expect(loaded).not.toBeNull();
     expect(loaded).toHaveLength(1);

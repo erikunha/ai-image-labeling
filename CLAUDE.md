@@ -27,6 +27,8 @@ npx vitest run tests/analyzer/batch.test.ts
 
 **Before any PR:** `pnpm run lint && pnpm run typecheck && pnpm test` — all must pass.
 
+**Shell environment:** macOS M2 / fish shell. Never use bash `for/do/done` loop syntax in terminal commands — use fish-native syntax or direct commands (e.g. `for f in *.ts; pnpm run typecheck $f; end` or just call the pnpm script directly).
+
 ## Architecture
 
 ### Module boundaries (strictly enforced)
@@ -34,7 +36,8 @@ npx vitest run tests/analyzer/batch.test.ts
 | Module | Role | Key constraint |
 |---|---|---|
 | `src/utils/` | Pure helpers (logger, retry, progress, exif, cost) | No LLM SDKs, no Sharp, no fs-extra |
-| `src/analyzer/client.ts` | **Only** file that imports LLM SDKs | All other code uses `LLMClient` / `AsyncBatchClient` |
+| `src/analyzer/providers/*.ts` | **Only** files that import LLM SDKs (one SDK per file) | No processor/, classifier/, or other SDK cross-imports |
+| `src/analyzer/client.ts` | Thin routing layer — imports from `./providers/*` only | Never imports any LLM SDK directly; all other code uses `LLMClient` / `AsyncBatchClient` |
 | `src/analyzer/batch.ts` | Batch analysis + Zod envelope validation | May import Sharp for image resize |
 | `src/analyzer/dedup.ts` | Perceptual hash deduplication | May import Sharp for dHash |
 | `src/analyzer/async-batch.ts` | Async Batch API submit/resume | Uses `AsyncBatchClient`; may import Sharp |
@@ -48,6 +51,8 @@ npx vitest run tests/analyzer/batch.test.ts
 | `src/plugin/` | Lifecycle hook dispatcher | Dynamic import of `.mjs` plugins; isolates failures |
 | `src/reviewer/` | Interactive TTY review loop | Requires TTY; never mutates cache |
 | `src/reporter/` | CSV, HTML, XLSX, SQLite report generation | No LLM SDK imports; HTML must escape all LLM data |
+| `src/fs/` | `FileRepository` port + 5 adapters (Node, Memory, S3, GCS, AzureBlob) | All file I/O should route through this interface; `createFileRepository` is the factory |
+| `src/sdk.ts` | Semver-stable public library API | All exports here are stable; internal paths (`dist/analyzer/batch.js` etc.) are NOT stable |
 | `src/index.ts` | Top-level orchestration (`runBatch`, `runReorder`, `runSingle`) | No direct external package imports |
 
 ### Data flow
@@ -127,6 +132,14 @@ function makeConfig(overrides: Partial<Config> = {}): Config {
     apiKey: 'test-key',
     anthropicApiKey: '',
     googleApiKey: '',
+    azureEndpoint: '',
+    azureApiKey: '',
+    ollamaUrl: 'http://localhost:11434',
+    bedrockRegion: 'us-east-1',
+    bedrockAccessKeyId: '',
+    bedrockSecretAccessKey: '',
+    vertexProjectId: '',
+    vertexLocation: 'us-central1',
     model: 'gpt-4o',
     batchSize: 5,
     maxRetries: 2,
@@ -156,6 +169,15 @@ function makeConfig(overrides: Partial<Config> = {}): Config {
     linkWindowDays: 7,
     selfCritique: false,
     learn: false,
+    localModel: 'llava',
+    cloudProvider: 'openai',
+    localConfidenceThreshold: 0.7,
+    embed: false,
+    sessionGapMinutes: undefined,
+    consensusProviders: undefined,
+    webhookUrl: undefined,
+    outputBucket: undefined,
+    activeLearnQueue: false,
     ...overrides,
   };
 }

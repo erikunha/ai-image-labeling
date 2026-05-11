@@ -252,7 +252,14 @@ describe('searchSemantic', () => {
   }
 
   function setIndex(entries: Array<{ number: number; file: string; vector: number[] }>): void {
-    const index = { schemaVersion: 1, generatedAt: '2026-01-01T00:00:00.000Z', entries };
+    const dims = entries[0]?.vector.length ?? 3;
+    const index = {
+      schemaVersion: 2,
+      generatedAt: '2026-01-01T00:00:00.000Z',
+      embeddingModel: 'text-embedding-3-small',
+      dimensions: dims,
+      entries,
+    };
     mockFiles.set(`${outputDir}/analysis_embeddings.index.json`, JSON.stringify(index));
   }
 

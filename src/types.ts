@@ -141,9 +141,9 @@ export interface AnalysisCache {
 
 /** Intermediate cache written after each completed batch for crash recovery. */
 export interface PartialAnalysisCache {
-  schemaVersion: number;
-  startedAt: string;
+  readonly schemaVersion: number;
+  readonly startedAt: string;
   /** SHA-256 (first 12 hex chars) of sorted category names at the time the run started. */
-  categoriesHash: string;
-  images: AnalyzedImage[];
+  readonly categoriesHash: string;
+  readonly images: AnalyzedImage[];
 }

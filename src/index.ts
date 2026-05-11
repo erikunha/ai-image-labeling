@@ -1,6 +1,4 @@
-export { runServe } from './server/index.js';
 import { watch as chokidarWatch, type FSWatcher } from 'chokidar';
-import fs from 'fs-extra';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import pLimit from 'p-limit';
@@ -63,6 +61,18 @@ const IMAGE_REGEX = /\.(jpe?g|png|webp|tiff?|avif)$/i;
 const CACHE_FILE_NAME = 'analysis_results.json';
 const PARTIAL_CACHE_FILE_NAME = '.analysis_cache_partial.json';
 const ASYNC_JOB_FILE_NAME = 'analysis_job.json';
+
+function resolveEmbeddingModel(config: Config): string {
+  switch (config.provider) {
+    case 'google':
+    case 'vertex':
+      return 'text-embedding-004';
+    case 'ollama':
+      return 'nomic-embed-text';
+    default:
+      return 'text-embedding-3-small';
+  }
+}
 
 function computeCategoriesHash(categoryConfig: CategoryConfig): string {
   const names = categoryConfig.categories
@@ -587,13 +597,17 @@ export async function runBatch(
     fileRepo,
   );
 
-  // H9.1 — Generate and persist embeddings when --embed is set
+  // H9.1 / H16.5 — Generate and persist embeddings when --embed is set
   if (config.embed && processedResults.length > 0 && !config.dryRun) {
     logger.info('\n Generating text embeddings...');
     const embeddings = await generateEmbeddings(processedResults, config);
-    const indexPath = defaultIndexPath(config.outputDir);
-    await buildIndex(embeddings, indexPath);
-    logger.info(` Embedding index written to ${indexPath}`);
+    if (embeddings.length > 0) {
+      const dimensions = embeddings[0]!.vector.length;
+      const embeddingModel = resolveEmbeddingModel(config);
+      const indexPath = defaultIndexPath(config.outputDir);
+      await buildIndex(embeddings, indexPath, embeddingModel, dimensions);
+      logger.info(` Embedding index written to ${indexPath}`);
+    }
   }
 }
 
@@ -817,13 +831,16 @@ async function postAnalysisPipeline(
 // ---------------------------------------------------------------------------
 // runReorder
 // ---------------------------------------------------------------------------
-export async function runReorder(config: Config): Promise<void> {
+export async function runReorder(
+  config: Config,
+  fileRepo: FileRepository = createFileRepository(config),
+): Promise<void> {
   const cacheFile = path.join(config.outputDir, CACHE_FILE_NAME);
-  if (!(await fs.pathExists(cacheFile))) {
+  if (!(await fileRepo.exists(cacheFile))) {
     throw new Error(`Cannot find cache: ${cacheFile}`);
   }
 
-  const cache = (await fs.readJSON(cacheFile)) as AnalysisCache;
+  const cache = await fileRepo.readJson<AnalysisCache>(cacheFile);
   const images = cache.images;
 
   if (images.length === 0) {
@@ -837,21 +854,24 @@ export async function runReorder(config: Config): Promise<void> {
   const reorderedImages = await reorderImages(config.outputDir, images, timezone);
   const updatedCache: AnalysisCache = { ...cache, images: reorderedImages };
 
-  const tmpReorderFile = `${cacheFile}.tmp`;
-  await fs.writeJSON(tmpReorderFile, updatedCache, { spaces: 2 });
-  await fs.rename(tmpReorderFile, cacheFile);
+  await fileRepo.writeJsonAtomic(cacheFile, updatedCache);
   logger.success(`Reorder complete. ${images.length} file(s) renamed.`);
 }
 
 // ---------------------------------------------------------------------------
 // runSingle
 // ---------------------------------------------------------------------------
-export async function runSingle(config: Config, number: number, filePath: string): Promise<void> {
-  if (!(await fs.pathExists(filePath))) {
+export async function runSingle(
+  config: Config,
+  number: number,
+  filePath: string,
+  fileRepo: FileRepository = createFileRepository(config),
+): Promise<void> {
+  if (!(await fileRepo.exists(filePath))) {
     throw new Error(`File not found: ${filePath}`);
   }
 
-  await fs.ensureDir(config.outputDir);
+  await fileRepo.ensureDir(config.outputDir);
 
   const file = path.basename(filePath);
   const { createdAt, exifSource } = await getImageTimestamp(filePath);
@@ -971,15 +991,14 @@ export async function runSuggestCategories(
   config: Config,
   outputPath: string,
   sampleSize: number,
+  fileRepo: FileRepository = createFileRepository(config),
 ): Promise<void> {
   const client = createLLMClient(config);
   const suggested = await suggestCategories(config.inputDir, sampleSize, client, config);
 
   const resolved = path.resolve(outputPath);
-  await fs.ensureDir(path.dirname(resolved));
-  const tmpSuggestPath = `${resolved}.tmp`;
-  await fs.writeFile(tmpSuggestPath, JSON.stringify(suggested, null, 2) + '\n', 'utf8');
-  await fs.rename(tmpSuggestPath, resolved);
+  await fileRepo.ensureDir(path.dirname(resolved));
+  await fileRepo.writeTextAtomic(resolved, JSON.stringify(suggested, null, 2) + '\n');
 
   logger.success(`\n Suggested taxonomy written to ${outputPath}`);
   logger.info(
@@ -1002,9 +1021,11 @@ export async function runSearch(
     minScore: number;
     outputFormat: 'pretty' | 'json';
     config: Config;
+    fileRepo?: FileRepository;
   },
 ): Promise<void> {
   const { query, keyword, top, minScore, outputFormat, config } = opts;
+  const fileRepo = opts.fileRepo ?? createFileRepository(config);
 
   if (!query && !keyword) {
     throw new Error('Either --query or --keyword is required.');
@@ -1019,10 +1040,10 @@ export async function runSearch(
   } else {
     // Keyword search — load cache first
     const cachePath = path.join(outputDir, 'analysis_results.json');
-    if (!(await fs.pathExists(cachePath))) {
+    if (!(await fileRepo.exists(cachePath))) {
       throw new Error(`analysis_results.json not found in ${outputDir}. Run analysis first.`);
     }
-    const cache = (await fs.readJSON(cachePath)) as AnalysisCache;
+    const cache = await fileRepo.readJson<AnalysisCache>(cachePath);
     results = searchKeyword(keyword as string, cache.images, { topK: top });
     mode = 'keyword';
   }
@@ -1053,16 +1074,17 @@ export async function runDiff(
   beforePath: string,
   afterPath: string,
   outputFormat: 'pretty' | 'json' = 'pretty',
+  fileRepo: FileRepository = new NodeFileRepository(),
 ): Promise<void> {
-  if (!(await fs.pathExists(beforePath))) {
+  if (!(await fileRepo.exists(beforePath))) {
     throw new Error(`File not found: ${beforePath}`);
   }
-  if (!(await fs.pathExists(afterPath))) {
+  if (!(await fileRepo.exists(afterPath))) {
     throw new Error(`File not found: ${afterPath}`);
   }
 
-  const before = (await fs.readJSON(beforePath)) as AnalysisCache;
-  const after = (await fs.readJSON(afterPath)) as AnalysisCache;
+  const before = await fileRepo.readJson<AnalysisCache>(beforePath);
+  const after = await fileRepo.readJson<AnalysisCache>(afterPath);
   const summary = diffCaches(before, after);
 
   if (outputFormat === 'json') {
@@ -1089,21 +1111,25 @@ export async function runDiff(
 // ---------------------------------------------------------------------------
 // runReport
 // ---------------------------------------------------------------------------
-export async function runReport(outputDir: string, outFile: string): Promise<void> {
+export async function runReport(
+  outputDir: string,
+  outFile: string,
+  fileRepo: FileRepository = new NodeFileRepository(),
+): Promise<void> {
   const cacheFile = path.join(outputDir, 'analysis_results.json');
 
-  if (!(await fs.pathExists(cacheFile))) {
+  if (!(await fileRepo.exists(cacheFile))) {
     throw new Error(`analysis_results.json not found in ${outputDir}. Run analysis first.`);
   }
 
-  const cache = (await fs.readJSON(cacheFile)) as AnalysisCache;
+  const cache = await fileRepo.readJson<AnalysisCache>(cacheFile);
 
   logger.info(`Generating HTML report for ${cache.totalImages} images...`);
 
   const html = await generateHtmlReport(cache, outputDir);
 
-  await fs.ensureDir(path.dirname(outFile));
-  await fs.writeFile(outFile, html, 'utf8');
+  await fileRepo.ensureDir(path.dirname(outFile));
+  await fileRepo.writeTextAtomic(outFile, html);
 
   logger.success(`Report written to ${outFile}`);
 }

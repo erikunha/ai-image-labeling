@@ -28,6 +28,8 @@ selected at runtime.
 - **`src/plugin/`** — Lifecycle hook dispatcher. Loads external `.mjs` plugins via dynamic import. Isolates all hook failures with try/catch — never throws. See `plugin.instructions.md`.
 - **`src/reviewer/`** — Interactive TTY review loop. TTY guard required. Returns `ReviewResult` without mutating the cache. See `reviewer.instructions.md`.
 - **`src/reporter/`** — CSV, HTML, XLSX report generation. HTML output must HTML-escape all LLM data. No LLM SDK imports. See `reporter.instructions.md`.
+- **`src/fs/`** — `FileRepository` port + 5 adapters (Node, Memory, S3, GCS, AzureBlob). All persistent file I/O should route through this interface. `createFileRepository` is the factory.
+- **`src/sdk.ts`** — Semver-stable public library API. All exports here are stable; internal module paths (`dist/analyzer/batch.js` etc.) are NOT stable.
 - **`src/index.ts`** — Top-level orchestration exported functions: `runBatch`, `runReorder`, `runSingle`.
 - **`scripts/`** — Developer utilities run via `tsx`. Never compiled to `dist/`. See `scripts.instructions.md`.
 
@@ -44,6 +46,7 @@ selected at runtime.
 | `src/plugin/`            | utils/, types                                          | any LLM SDK, Sharp, fs-extra, src/analyzer/, src/processor/ |
 | `src/reviewer/`          | utils/, config/, types, @inquirer/\*                   | any LLM SDK, Sharp                                          |
 | `src/reporter/`          | utils/, types, fs-extra, exceljs                       | any LLM SDK, Sharp, src/analyzer/                           |
+| `src/fs/`                | Node stdlib, cloud SDKs (per adapter)                  | LLM SDKs, Sharp, src/analyzer/                              |
 | `src/cli/`               | config/, index, utils/logger                           | analyzer/, processor/, classifier/                          |
 | `src/index.ts`           | All src/ modules                                       | external packages directly                                  |
 
@@ -87,7 +90,7 @@ selected at runtime.
 - Pure functions (classifier, overlay math, CSV builder) should be tested without mocks
 - Do not test `src/cli/` or `src/index.ts` (excluded from coverage)
 - Config test fixtures must include ALL required `Config` fields — never use `as Config` to suppress errors
-- Required fields commonly missed: `concurrency: 1`, `estimate: false`, `temporalWindowMinutes: 5`, `consensusThreshold: 0.6`, `dedupeThreshold: 0`, `interactive: false`, `plugins: []`, `asyncBatch: false`, `resumeBatch: false`, `forceSkipAnalysis: false`, `activeLearnQueue: false`, `embed: false`, `sessionGapMinutes: undefined`, `consensusProviders: undefined`, `serveLogRequests: false`
+- Required fields commonly missed: `concurrency: 1`, `estimate: false`, `temporalWindowMinutes: 5`, `consensusThreshold: 0.6`, `dedupeThreshold: 0`, `interactive: false`, `plugins: []`, `asyncBatch: false`, `resumeBatch: false`, `forceSkipAnalysis: false`, `activeLearnQueue: false`, `embed: false`, `sessionGapMinutes: undefined`, `consensusProviders: undefined`
 - `AnalysisResult` fixtures must include `fullDescription: ''`, `confidence: 0`, and `extractedText: null` — do NOT include `condition` (removed as domain-specific)
 - Coverage thresholds: lines 75%, functions 85%, branches 75%
 

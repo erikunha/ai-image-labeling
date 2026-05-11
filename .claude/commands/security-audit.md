@@ -13,7 +13,6 @@ Primary attack surfaces:
 2. **Path traversal via `--categories`** — user-supplied JSON path
 3. **Prompt injection in cached data** — cached `shortDescription` rendered in HTML/logs
 4. **XSS in HTML output** — if `shortDescription`/`elements` written to HTML report
-5. **REST server (`--serve`)** — unauthenticated access when `--serve-api-key` not set; image uploads could contain adversarial payloads.
 
 ## Audit checklist
 
@@ -42,7 +41,6 @@ Primary attack surfaces:
 
 ### MEDIUM
 
-- [ ] `src/server/index.ts`: Verify all non-health endpoints check `Authorization: Bearer <token>` when `config.serveApiKey` is set (return 401 otherwise)
 - [ ] `src/utils/logger.ts`: Does it ever interpolate LLM data into log messages without truncation?
 - [ ] `.env` and `.env.*` (except `.env.example`) listed in `.gitignore`?
 

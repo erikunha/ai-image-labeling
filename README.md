@@ -119,7 +119,6 @@ ai-image-labeling reorder                           # re-number output after man
 ai-image-labeling single <number> <file>            # process one image with a custom sequence number
 ai-image-labeling report                            # generate report from existing analysis_results.json
 ai-image-labeling suggest-categories               # sample N images and propose a categories.json taxonomy
-ai-image-labeling serve                             # start HTTP server (POST /classify, GET /search)
 ai-image-labeling search <query>                    # search classified images by semantic query or keyword
 ai-image-labeling diff <before.json> <after.json>  # compare two analysis_results.json files
 ```
@@ -204,14 +203,6 @@ ai-image-labeling diff <before.json> <after.json>  # compare two analysis_result
 | `--output-format` | `<fmt>` | Output format: `pretty` \| `json` \| `none` \| `csv` \| `xlsx` \| `sqlite` | `pretty` |
 | `--filename-template` | `<pattern>` | Output filename template — see [Filename template tokens](#filename-template-tokens) | `{n}. {description} dated {date}.{ext}` |
 | `--output-bucket` | `<uri>` | Upload output to cloud storage: `s3://bucket/prefix`, `gs://bucket/prefix`, `azblob://container/prefix` | — |
-
-### REST server (`serve` subcommand)
-
-| Flag | Argument | Description | Default |
-|---|---|---|---|
-| `--serve-api-key` | `<token>` | Bearer token for REST server authentication | — |
-| `--serve-rate-limit` | `<rpm>` | Requests per minute per IP | — |
-| `--serve-log-requests` | | Log each HTTP request as structured JSON to stdout | `false` |
 
 ### Integrations
 
@@ -320,27 +311,6 @@ ai-image-labeling --resume --input ./photos --output ./sorted
 ```
 
 If the batch job fails, delete `analysis_job.json` and re-run without `--async`.
-
----
-
-## REST server
-
-The `serve` subcommand starts an HTTP server on port 3000 (configurable):
-
-```bash
-ai-image-labeling serve --serve-api-key mysecrettoken --serve-rate-limit 60
-```
-
-Endpoints:
-
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/classify` | Classify an uploaded image |
-| `GET` | `/search` | Search classified images by query |
-| `GET` | `/health` | Liveness check |
-| `GET` | `/openapi.json` | OpenAPI schema |
-
-The server binds to `localhost` by default and should not be exposed to the internet without TLS termination in front of it.
 
 ---
 

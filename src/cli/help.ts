@@ -103,30 +103,6 @@ ${chalk.bold('SEARCH SUBCOMMAND')}
     ${chalk.cyan('ai-image-labeling search --query "kitchen with modern appliances" --top 10')}
     ${chalk.cyan('ai-image-labeling search --keyword "crack" --top 20')}
 
-${chalk.bold('SERVE SUBCOMMAND')}
-  ai-image-labeling serve [OPTIONS]
-
-  Start an HTTP REST API server that classifies images on demand.
-  Provider credentials are configured at startup (same flags as main command).
-
-  POST /classify            Classify a single image.
-                            Content-Type: application/octet-stream, ?filename=photo.jpg
-                            Returns: { category, shortDescription, elements, confidence, extractedText }
-
-  POST /classify            Classify a batch of images.
-  POST /classify/batch      Content-Type: application/json
-                            Body: { "images": [{ "filename": "x.jpg", "data": "<base64>" }] }
-                            Returns: { "results": [{ "filename": "x.jpg", "category": ... }] }
-
-  GET  /health              Liveness check. Returns: { "status": "ok" }
-  GET  /openapi.json        OpenAPI 3.1 spec (always unauthenticated)
-
-  --port               <n>       Port to listen on                            (default: 3000)
-  --serve-api-key      <token>   Require Authorization: Bearer <token> on all non-health routes
-                                 (or set SERVER_API_KEY env var)
-  --serve-rate-limit   <rpm>     Max requests per minute per source IP        (default: unlimited)
-  --serve-log-requests           Log each request: method, path, status, ms, IP, timestamp
-
 ${chalk.bold('SUGGEST-CATEGORIES SUBCOMMAND')}
   ai-image-labeling suggest-categories [OPTIONS]
 

@@ -35,6 +35,8 @@ pnpm run check          # lint + typecheck + coverage (full pre-PR suite)
 | `src/plugin/` | utils/, types | any LLM SDK, Sharp, fs-extra, analyzer/, processor/ |
 | `src/reviewer/` | utils/, config/, types, @inquirer/* | any LLM SDK, Sharp |
 | `src/reporter/` | utils/, types, fs-extra, exceljs, drizzle-orm (dynamic) | any LLM SDK, Sharp, analyzer/ |
+| `src/fs/` | Node stdlib, cloud SDKs (per adapter) | LLM SDKs, Sharp, analyzer/ |
+| `src/sdk.ts` | All src/ modules (re-exports only) | nothing — stable re-export surface only |
 | `src/cli/` | config/, index, utils/logger | analyzer/, processor/, classifier/ |
 | `src/index.ts` | All src/ modules | external packages directly |
 
@@ -122,9 +124,6 @@ function makeConfig(overrides: Partial<Config> = {}): Config {
     webhookUrl: undefined,
     outputBucket: undefined,
     activeLearnQueue: false,
-    serveApiKey: undefined,
-    serveRateLimit: undefined,
-    serveLogRequests: false,
     ...overrides,
   };
 }

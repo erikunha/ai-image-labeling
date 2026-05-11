@@ -1,3 +1,7 @@
+---
+description: Runs the full CI quality gate (module boundaries, TypeScript, tests, lint, security, data integrity) against uncommitted code changes. Use for pre-PR checks and code change validation — NOT for architecture reviews, workflow audits, or meta-questions about the project.
+---
+
 # Dev Review — Quality Gate
 
 Run the full quality gate against all uncommitted changes (or `$ARGUMENTS` if a path/diff is given).

@@ -211,12 +211,6 @@ export interface Config {
    * Disagreements are flagged with `lowConsensus: true` on the ProcessedResult.
    */
   readonly consensusProviders?: readonly string[];
-  /** Bearer token required on all non-health routes when set. Reads from SERVER_API_KEY env var. */
-  readonly serveApiKey?: string;
-  /** Max requests per minute per source IP for the REST server. No limit when undefined. */
-  readonly serveRateLimit?: number;
-  /** When true, log each HTTP request as a structured line to stdout. */
-  readonly serveLogRequests: boolean;
 }
 
 // Default categories file — lives in examples/ so config module stays domain-agnostic.
@@ -281,9 +275,6 @@ export interface RawCliOptions {
   embed?: boolean;
   sessionGapMinutes?: number;
   consensusProviders?: string[];
-  serveApiKey?: string;
-  serveRateLimit?: number;
-  serveLogRequests?: boolean;
 }
 
 const DEFAULT_MODEL: Record<string, string> = {
@@ -501,9 +492,6 @@ export async function loadConfig(cliOptions: RawCliOptions): Promise<Config> {
     embed: cliOptions.embed ?? false,
     sessionGapMinutes: cliOptions.sessionGapMinutes,
     consensusProviders: cliOptions.consensusProviders,
-    serveApiKey: cliOptions.serveApiKey ?? process.env['SERVER_API_KEY'],
-    serveRateLimit: cliOptions.serveRateLimit,
-    serveLogRequests: cliOptions.serveLogRequests ?? false,
   };
 }
 

@@ -132,7 +132,7 @@ export async function runHybridBatch(
             { maxTokens: 500, detail: 'high', systemPrompt },
           ),
         {
-          maxRetries: config.maxRetries,
+          maxAttempts: config.maxRetries,
           delayMs: config.retryDelayMs,
           label: `hybrid:${file.file}`,
         },

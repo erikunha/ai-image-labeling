@@ -1,30 +1,5 @@
 {
-  "permissions": {
-    "skipPermissions": true,
-    "allow": [
-      "Bash(npm run *)",
-      "Bash(npm install *)",
-      "Bash(npm list *)",
-      "Bash(npm test *)",
-      "Bash(npx vitest *)",
-      "Bash(npx tsx *)",
-      "Bash(git diff *)",
-      "Bash(git log *)",
-      "Bash(git status)",
-      "Bash(git show *)",
-      "Bash(git add *)",
-      "Bash(git commit *)",
-      "Bash(pnpm run typecheck *)",
-      "Bash(pnpm run lint *)",
-      "Bash(pnpm run test *)",
-      "Bash(pnpm run test:coverage *)",
-      "Bash(pnpm test *)",
-      "Bash(pnpm config get *)",
-      "Bash(brew list *)",
-      "Bash(brew search *)"
-    ],
-    "deny": ["Bash(git reset --hard *)", "Bash(rm -rf *)"]
-  },
+  "skipPermissions": true,
   "hooks": {
     "PostToolUse": [
       {
@@ -32,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "pnpm run typecheck 2>&1 | tail -5"
+            "command": "python3 -c \"import json,sys; d=json.load(sys.stdin); f=d.get('tool_input',{}).get('file_path',''); sys.exit(0 if not f.endswith(('.ts','.tsx')) else 1)\" 2>/dev/null && exit 0 || pnpm run typecheck 2>&1 | tail -5"
           }
         ]
       }

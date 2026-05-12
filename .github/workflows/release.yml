@@ -74,7 +74,7 @@ jobs:
 
       # Create a GitHub Release with an auto-generated changelog from the tag range
       - name: Create GitHub Release
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
